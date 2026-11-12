@@ -1,0 +1,893 @@
+/**
+ * ==============================================================================
+ * 파일명: style.css
+ * 설명: GymMate 모바일 퍼스트 반응형 스타일시트 (피트니스 테마)
+ * ==============================================================================
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 1. 디자인 시스템 변수 및 전역 리셋                                         */
+/* -------------------------------------------------------------------------- */
+:root {
+  /* 메인 색상 팔레트 (다크 모드 베이스 + 활력 있는 네온 라임/그린 포인트) */
+  --bg-primary: #121417;        /* 전체 배경 어두운 차콜 */
+  --bg-surface: #1e2229;        /* 카드 및 컨테이너 배경 */
+  --bg-surface-elevated: #282d37;/* 호버 및 강조 표면 */
+  
+  --primary-accent: #22c55e;    /* 활력 있는 운동 테마 초록색 (Green 500) */
+  --primary-accent-hover: #16a34a;
+  --accent-glow: rgba(34, 197, 94, 0.25);
+
+  --text-main: #f3f4f6;         /* 기본 텍스트 (아이보리 화이트) */
+  --text-muted: #9ca3af;        /* 보조 설명 텍스트 (그레이) */
+  --border-color: #374151;      /* 경계선 색상 */
+
+  --danger-color: #ef4444;      /* 경고/주의 색상 (Red) */
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --warning-color: #f59e0b;     /* 알림 색상 (Amber) */
+
+  /* 타이포그래피 및 여백 */
+  --font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. 레이아웃 컨테이너 (스마트폰 최적화)                                      */
+/* -------------------------------------------------------------------------- */
+.app-container {
+  width: 100%;
+  max-width: 480px; /* 스마트폰 및 태블릿 한 손 조작 뷰에 최적화 */
+  min-height: 100vh;
+  background-color: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 상단 헤더 */
+.app-header {
+  padding: 20px 24px 16px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  font-size: 1.8rem;
+}
+
+.logo-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+}
+
+.header-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* 진행 단계 인디케이터 */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--border-color);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.step-item.active {
+  color: var(--primary-accent);
+}
+
+.step-item.active .step-num {
+  background-color: var(--primary-accent);
+  color: #000000;
+  font-weight: 700;
+}
+
+.step-item.disabled {
+  opacity: 0.45;
+}
+
+.step-divider {
+  flex-grow: 1;
+  height: 2px;
+  background-color: var(--border-color);
+  margin: 0 8px;
+}
+
+/* 메인 컨텐츠 영역 */
+.main-content {
+  flex: 1;
+  padding: 20px 18px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 안내 카드 */
+.intro-card {
+  text-align: center;
+  padding: 8px 12px;
+}
+
+.intro-card h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.intro-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. 이미지 업로드 섹션 & 드롭존                                             */
+/* -------------------------------------------------------------------------- */
+.upload-section {
+  width: 100%;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 30px 16px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--primary-accent);
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.upload-icon-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated);
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  border: 1px solid var(--border-color);
+}
+
+.primary-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.secondary-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+/* 이미지 미리보기 컨테이너 */
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.preview-img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. 버튼 공통 스타일 (터치 최적화)                                          */
+/* -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px; /* 한 손 터치 최소 표준 높이 */
+}
+
+.btn-primary {
+  background-color: var(--primary-accent);
+  color: #000000;
+  flex: 1;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface-elevated);
+  color: #ffffff;
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: #323846;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. 로딩 인디케이터                                                         */
+/* -------------------------------------------------------------------------- */
+.loading-section {
+  text-align: center;
+  padding: 40px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.loading-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. 결과 표시 카드 섹션                                                     */
+/* -------------------------------------------------------------------------- */
+.result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  background-color: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 기구 헤더 */
+.badge-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.badge-primary {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: var(--primary-accent);
+}
+
+.badge-difficulty {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--warning-color);
+}
+
+.equipment-name-ko {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.equipment-name-en {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.target-muscles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.muscle-item {
+  display: flex;
+  font-size: 0.88rem;
+}
+
+.muscle-label {
+  color: var(--text-muted);
+  width: 95px;
+  font-weight: 600;
+}
+
+.muscle-value {
+  color: #ffffff;
+  flex: 1;
+}
+
+.primary-muscle {
+  color: var(--primary-accent);
+  font-weight: 700;
+}
+
+/* 가이드 상세 블록 */
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.guide-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guide-title .icon {
+  font-size: 1.1rem;
+}
+
+.guide-list {
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #d1d5db;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guide-list.numbered {
+  padding-left: 22px;
+}
+
+/* 주의사항 강조 블록 */
+.alert-block {
+  background-color: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.guide-title.warning {
+  color: #fca5a5;
+}
+
+.warning-list {
+  padding-left: 18px;
+  color: #fecaca;
+}
+
+/* 하단 액션 버튼 바 */
+.action-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. 에러 배너 알림                                                          */
+/* -------------------------------------------------------------------------- */
+.error-banner {
+  background-color: var(--danger-bg);
+  border: 1px solid var(--danger-color);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+.error-icon {
+  font-size: 1.4rem;
+}
+
+.error-text-wrap {
+  flex: 1;
+}
+
+.error-msg-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f87171;
+}
+
+.error-msg-desc {
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+.error-close-btn {
+  background: transparent;
+  border: none;
+  color: #fca5a5;
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. 2단계: 루틴 조건 설정 및 타임라인 스타일                                */
+/* -------------------------------------------------------------------------- */
+
+/* 조건 설정 섹션 */
+.routine-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.35s ease forwards;
+}
+
+.config-header-card {
+  text-align: left;
+}
+
+.config-main-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 6px 0 4px;
+}
+
+.config-sub-title {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.selected-equipment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.equip-icon {
+  font-size: 1.2rem;
+}
+
+.equip-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* 칩 그룹 (선택 버튼) */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  background-color: var(--bg-surface-elevated);
+  color: #ffffff;
+}
+
+.chip.active {
+  background-color: rgba(34, 197, 94, 0.18);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  font-weight: 700;
+}
+
+/* 체크박스 그룹 */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  accent-color: var(--primary-accent);
+  width: 15px;
+  height: 15px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. 2단계: 추천 루틴 타임라인 뷰                                            */
+/* -------------------------------------------------------------------------- */
+.routine-view-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.4s ease forwards;
+  padding-bottom: 70px; /* 플로팅 타이머 여백 확보 */
+}
+
+.routine-summary-card {
+  border-left: 4px solid var(--primary-accent);
+}
+
+.routine-title-text {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 6px 0;
+}
+
+.routine-guide-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* 타임라인 컨테이너 */
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.timeline-card {
+  background-color: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.timeline-card.completed {
+  border-color: rgba(34, 197, 94, 0.4);
+  background-color: rgba(34, 197, 94, 0.03);
+}
+
+.timeline-phase-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.phase-warmup { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.phase-main { background: rgba(34, 197, 94, 0.2); color: var(--primary-accent); }
+.phase-accessory { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+.phase-cooldown { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.exercise-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.exercise-equip-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 세트 체크 리스트 */
+.sets-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.set-check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+}
+
+.set-label-text {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.set-target-text {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.set-checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--primary-accent);
+  cursor: pointer;
+}
+
+.coach-tip-box {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid var(--border-color);
+  padding: 8px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.82rem;
+  color: #d1d5db;
+  margin-top: 8px;
+}
+
+.coach-tip-box .tip-prefix {
+  font-weight: 700;
+  color: var(--warning-color);
+  margin-right: 4px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. 세트 휴식 플로팅 타이머                                               */
+/* -------------------------------------------------------------------------- */
+.floating-timer-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 448px;
+  background-color: #1a1e24;
+  border: 1px solid var(--primary-accent);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 40px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.timer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.timer-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.timer-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.timer-countdown {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--primary-accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.timer-btn {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  color: #ffffff;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.timer-btn:hover {
+  background-color: #374151;
+}
+
+.timer-btn.skip-btn {
+  background-color: rgba(34, 197, 94, 0.2);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.timer-progress-track {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.timer-progress-fill {
+  height: 100%;
+  width: 100%;
+  background-color: var(--primary-accent);
+  transition: width 1s linear;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11. 푸터                                                                   */
+/* -------------------------------------------------------------------------- */
+.app-footer {
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
