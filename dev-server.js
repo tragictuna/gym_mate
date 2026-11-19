@@ -104,7 +104,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2-2. 정적 파일 서빙 (index.html, style.css, script.js 등)
+  // 2-2. 정적 파일 서빙 (index.html, css/style.css, script.js 등)
   let relativeFilePath = pathname === "/" ? "index.html" : pathname.slice(1);
   const safeFilePath = path.join(__dirname, path.normalize(relativeFilePath));
 
@@ -137,7 +137,8 @@ server.listen(PORT, () => {
 ======================================================
   🏋️‍♂️ GymMate 로컬 개발 서버가 구동되었습니다!
   - 로컬 주소: http://localhost:${PORT}
-  - 1단계 기구 인식 API: http://localhost:${PORT}/api/analyze-equipment
+  - 기구 인식 API: http://localhost:${PORT}/api/recognize
+  - 루틴 생성 API: http://localhost:${PORT}/api/routine
 ======================================================
   `);
 });

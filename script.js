@@ -153,8 +153,8 @@ analyzeBtn.addEventListener("click", async () => {
   hideError();
 
   try {
-    // Vercel 서버리스 API 호출 (/api/analyze-equipment)
-    const response = await fetch("/api/analyze-equipment", {
+    // Vercel 서버리스 API 호출 (/api/recognize)
+    const response = await fetch("/api/recognize", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

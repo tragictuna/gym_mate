@@ -1,10 +1,32 @@
 /**
  * ==============================================================================
- * 파일명: api/recommend-routine.js
+ * 파일명: api/routine.js
  * 설명: 2단계 - 사용자 조건 및 1단계 기구 기반 맞춤형 초보자 운동 루틴 생성 API
  * 모델: OpenRouter (기본값: google/gemma-4-26b-a4b-it:free) + Fallback 체인
  * ==============================================================================
  */
+
+/**
+ * OpenRouter에 보낼 HTTP-Referer 값을 요청 정보로 만듭니다.
+ * - 동작 원리: 하드코딩된 localhost 대신 실제 접속 주소를 써서, 로컬과 Vercel 배포 환경 모두에서 올바른 출처를 알립니다.
+ *   1순위는 브라우저가 보내는 origin 헤더, 2순위는 host 헤더(+프로토콜)입니다.
+ * @param {object} req - 들어온 HTTP 요청 객체 (req.headers.origin, req.headers.host 사용)
+ * @returns {string} 예: "https://gymmate.vercel.app" 또는 "http://localhost:3000"
+ * - 예외 처리: curl 등 헤더가 없는 요청에서도 호출이 실패하지 않도록, 둘 다 없으면 localhost를 씁니다.
+ */
+function getReferer(req) {
+  const headers = (req && req.headers) || {};
+  if (headers.origin) {
+    return headers.origin;
+  }
+  if (headers.host) {
+    // Vercel은 프록시 뒤에서 동작하므로 x-forwarded-proto로 원래 프로토콜(https)을 알아냅니다.
+    // 값이 "https,http"처럼 여러 개일 수 있어 첫 번째 값만 씁니다.
+    const proto = String(headers["x-forwarded-proto"] || "http").split(",")[0].trim();
+    return `${proto}://${headers.host}`;
+  }
+  return "http://localhost:3000";
+}
 
 export default async function handler(req, res) {
   // CORS 헤더 설정 (로컬 개발 및 Vercel 배포 환경 지원)
@@ -139,14 +161,15 @@ export default async function handler(req, res) {
       headers: {
         "Authorization": `Bearer ${apiKey.trim()}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
+        "HTTP-Referer": getReferer(req),
         "X-Title": "GymMate"
       },
       body: JSON.stringify({
         model: modelName,
+        // 주 모델이 실패(한도 초과·과부하)하면 무료 라우터(openrouter/free)로 넘깁니다.
+        // 유료 모델(google/gemma-4-26b-a4b-it)은 크레딧이 몰래 차감되지 않도록 넣지 않습니다.
         models: [
           modelName,
-          "google/gemma-4-26b-a4b-it",
           "openrouter/free"
         ],
         messages: [
@@ -235,7 +258,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("[Internal Server Error in recommend-routine]:", error);
+    console.error("[Internal Server Error in routine]:", error);
     return res.status(500).json({
       success: false,
       error: `서버 내부 오류가 발생했습니다: ${error.message}`

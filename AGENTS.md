@@ -6,11 +6,10 @@
 
 ## 1. 프로젝트 개요 (Overview)
 - **서비스명:** GymMate (짐메이트)
-- **목적:** 헬스장 초보자를 위한 기구 사진 인식, 맞춤형 운동 루틴 추천, 운동 기록 및 성장 시각화 서비스
-- **참조 문서:**
-  - `PRD_step1.md`: 1단계 - AI 헬스장 기구 이미지 인식 기능
-  - `PRD_step2.md`: 2단계 - 사용자 조건 맞춤형 운동 루틴 생성 기능
-  - `PRD_step3.md`: 3단계 - 사용자 프로필 및 운동 기록/성장 대시보드
+- **목적:** 헬스 0~2개월 차이고 혼자 운동하는 대학생이 "따라 하기가 아니라 순서의 이유를 이해"하도록 돕는 서비스
+- **핵심 흐름:** 처음 한 번 기구 사진으로 '내 헬스장'을 등록 → 이후 홈에서 '오늘 운동 시작' → 조건 선택 → 등록 기구만 쓴 루틴 생성
+- **하지 않는 것:** 자세 교정, 회원가입과 서버 DB, 식단, 커뮤니티, 네이티브 앱
+- **참조 문서:** 짐메이트 AI — PRD (2026-11-12). AGENTS.md와 PRD가 충돌하면 PRD를 따르고, 이 문서도 함께 고칩니다.
 
 ---
 
@@ -18,7 +17,8 @@
 
 ### 📌 규칙 1. 기술 스택 제약 (순수 HTML/CSS/JS + Vercel 서버리스)
 - **프론트엔드:** 프레임워크(React, Vue, Next.js, Angular 등) 및 빌드 도구(Webpack, Vite, Rollup, Babel, PostCSS 등)의 **사용을 엄격히 금지**합니다.
-  - 정적 파일 구조: `index.html`, `style.css`, `script.js` (필요 시 하위 모듈 js 분리 가능)
+  - 정적 파일 구조: 페이지별 HTML(`index.html`, `scan.html`, `routine.html`, `workout.html`) + `css/style.css` + `js/*.js` (일반 `<script>`로 불러오는 전역 객체 방식)
+  - 외부 라이브러리는 3단계의 Chart.js만 CDN `<script>`로 허용합니다.
 - **백엔드 (API):** Vercel 서버리스 함수(`api/*.js`, Node.js CommonJS 또는 ES Module 환경)만 사용합니다.
 - 패키지 의존성(npm dependencies)은 서버리스 함수에 필요한 최소한(예: node-fetch 등 필요 시)으로 제한하며, 프론트엔드 번들러는 일체 두지 않습니다.
 
@@ -54,23 +54,39 @@
 
 ## 3. 프로젝트 디렉토리 구조 (Directory Structure)
 
+다중 페이지 구조입니다. 각 HTML은 필요한 `js/*.js`만 일반 `<script>`로 불러옵니다.
+
 ```text
 gymmate/
-├── .env.local               # 로컬 개발 환경 변수 (OPENROUTER_API_KEY 등, git 제외)
-├── .gitignore               # 형상 관리 제외 목록
-├── AGENTS.md                # 본 개발 지침서
-├── PRD_step1.md             # 1단계 기구 인식 PRD
-├── PRD_step2.md             # 2단계 루틴 추천 PRD
-├── PRD_step3.md             # 3단계 기록 및 프로필 PRD
-├── index.html               # 단일 페이지 애플리케이션(SPA) 구조의 메인 마크업
-├── style.css                # 모바일 퍼스트 반응형 스타일시트
-├── script.js                # 클라이언트 상태 관리, UI 이벤트 및 API 통신 스크립트
-├── package.json             # Vercel 로컬 런타임 및 의존성 정의
-└── api/                     # Vercel 서버리스 엔드포인트
-    ├── analyze-equipment.js # 1단계: 기구 이미지 비전 분석 API
-    ├── recommend-routine.js # 2단계: 맞춤형 루틴 생성 API
-    └── ...                  # 3단계 관련 API (필요 시)
+├── .env.local          # 로컬 개발 환경 변수 (OPENROUTER_API_KEY 등, git 제외)
+├── .gitignore          # 형상 관리 제외 목록
+├── AGENTS.md           # 본 개발 지침서
+├── index.html          # 홈 = 내 헬스장 (등록 기구 목록, 기구 추가, 오늘 운동 시작)
+├── scan.html           # 기구 등록 (촬영/앨범 → 인식 → 카드 확인 → 저장)
+├── routine.html        # 오늘의 루틴 (조건 칩 선택 → 루틴 생성·표시)
+├── workout.html        # 3단계: 운동 진행·기록
+├── css/
+│   └── style.css       # 모바일 퍼스트 공통 스타일시트
+├── js/
+│   ├── storage.js      # LocalStorage 읽기·쓰기 (gm_* 키 관리)
+│   ├── image.js        # 이미지 리사이즈(긴 변 1024px)·JPEG 0.85 base64 변환
+│   └── (페이지별 스크립트: home.js, scan.js, routine.js 등)
+├── api/                # Vercel 서버리스 엔드포인트 (OpenRouter 호출은 여기서만)
+│   ├── recognize.js    # 기구 사진 인식 API
+│   └── routine.js      # 등록 기구 기반 루틴 생성 API
+├── dev-server.js       # npm 설치 없이 정적 파일 + api/*를 띄우는 로컬 개발 서버
+└── package.json        # 실행 스크립트 정의 (npm run dev)
 ```
+
+### LocalStorage 키 (서버 DB 없음)
+| 키 | 내용 | 단계 |
+|---|---|---|
+| `gm_equipment` | 등록 기구 목록 `{id, name_ko, name_en, target_muscles[], role, setup[], cautions[], created_at}` | 1 |
+| `gm_profile` | 마지막 조건 `{goal, experience, default_minutes}` | 2 |
+| `gm_routines` | 생성 루틴 `{id, date, conditions, principle, warmup, exercises}` | 2 |
+| `gm_logs` | 운동 기록 | 3 |
+
+- 사진은 인식에만 쓰고 **저장하지 않습니다.**
 
 ---
 
@@ -78,26 +94,25 @@ gymmate/
 
 ```mermaid
 flowchart LR
-    A["1단계: 기구 이미지 인식<br>(사진 업로드 -> Vision API -> 카드 렌더링)"] --> B["2단계: 맞춤 루틴 추천<br>(조건 입력 -> LLM Routine API -> 세트 타이머)"]
-    B --> C["3단계: 기록 및 프로필<br>(로컬/DB 저장 -> 캘린더 잔디 -> 성장 대시보드)"]
+    A["1단계: 내 헬스장 등록<br>(scan.html → api/recognize → gm_equipment)"] --> B["2단계: 오늘의 루틴<br>(routine.html → api/routine → gm_routines)"]
+    B --> C["3단계: 운동 진행·기록<br>(workout.html → gm_logs → Chart.js)"]
 ```
 
-### [Step 1] 1단계: 기구 이미지 인식 기능
-1. **기본 정적 파일 셋업:** `index.html`, `style.css`, `script.js` 기본 골격 작성 (모바일 뷰 최적화)
-2. **이미지 입력 UI 구현:** 파일 업로드/카메라 촬영, 클라이언트 단 이미지 리사이징(Base64 인코딩)
-3. **서버리스 API 구축 (`api/analyze-equipment.js`):** OpenRouter의 `google/gemma-4-26b-a4b-it:free` 멀티모달 호출 및 JSON 반환
-4. **결과 표시 뷰:** 기구명, 타겟 부위, 세팅법, 주의사항 렌더링 및 2단계 연계 버튼 배치
+### [Step 1] 1단계: 내 헬스장 등록
+1. **이미지 입력 (F1-1):** 촬영 버튼과 앨범 버튼 분리, 긴 변 1024px·JPEG 0.85로 축소 (`js/image.js`)
+2. **인식 API (`api/recognize.js`):** `{is_equipment, name_ko, name_en, target_muscles[], role, setup[], cautions[], confidence("high"|"low"), alternatives[]}` 반환, 형식 검사와 1회 재시도
+3. **결과 카드 (`scan.html`):** 확신도가 낮으면 후보 선택(F1-2), 이름 수정(F1-3), "통증이 있으면 즉시 멈추세요" 항상 표시, `gm_equipment`에 저장
+4. **홈 (`index.html`):** 등록 기구 목록, 기구 카드 열기(F1-5), 삭제 확인(F1-4)
 
-### [Step 2] 2단계: 맞춤형 운동 루틴 생성 기능
-1. **조건 입력 폼 모달/섹션:** 운동 목표(체지방/근비대), 가용 시간(20/40/60분), 난이도 선택 UI
-2. **서버리스 API 구축 (`api/recommend-routine.js`):** 1단계 기구 데이터 + 사용자 조건 기반 프롬프트 생성 및 루틴 JSON 파싱
-3. **루틴 인터랙티브 UI:** [워밍업-메인기구-보조운동-쿨다운] 타임라인 카드, 세트 체크박스, 휴식 카운트다운 타이머 제공
+### [Step 2] 2단계: 오늘의 루틴
+1. **조건 선택 (F2-1):** 칩만 사용(타이핑 없음) — 목표(근육 늘리기/체력/체중 감량), 시간(30/45/60분), 부위, 경력(0~1개월/1~2개월). 마지막 값은 `gm_profile`에 저장
+2. **루틴 API (`api/routine.js`):** 등록 기구 목록만 사용, `{principle, total_minutes, warmup, exercises[{order, equipment_id, exercise, sets, reps, rest_sec, why_this_order}]}` 반환, 목록에 없는 기구는 서버에서 걸러냄(`filtered_count`)
+3. **결과 화면:** principle 강조 → 워밍업 → 순서별 운동 카드(누르면 기구 카드), `gm_routines`에 저장, 다시 만들기
 
-### [Step 3] 3단계: 사용자 프로필 및 기록 대시보드
-1. **프로필 저장소 구성:** 경력, 목표, 주간 목표 저장 (LocalStorage 우선 구현)
-2. **운동 세션 완료 로깅:** 루틴 수행 완료 시 실제 중량/세트/메모 저장
-3. **대시보드 시각화:** 월간 운동 출석 잔디 캘린더, 연속 운동 일수(Streak), 부위별 운동 통계 제공
-4. **피드백 루프:** 과거 기록을 2단계 루틴 프롬프트 컨텍스트에 자동 연동
+### [Step 3] 3단계: 운동 진행·기록
+1. **세트 체크·휴식 타이머 (F3-1)** (`workout.html`)
+2. **기록 저장:** `gm_logs` (LocalStorage, 서버 DB 없음)
+3. **시각화:** Chart.js(CDN)
 
 ---
 
@@ -108,8 +123,8 @@ flowchart LR
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
    ```
-2. **로컬 서버 구동 (Vercel CLI):**
-   - Vercel 서버리스 함수와 정적 파일을 동시에 서빙하기 위해 `vercel dev`를 활용합니다.
+2. **로컬 서버 구동:**
+   - `npm run dev` (= `node dev-server.js`): npm 설치 없이 정적 파일과 `api/*.js`를 함께 띄웁니다. Vercel CLI를 쓰려면 `npm run dev:vercel`.
    - 포트: 기본 `http://localhost:3000`
 3. **검증 가이드라인:**
    - 에이전트는 코드를 추가/수정한 후 변경 사항과 함께 테스트 방법(예: 어떤 버튼을 누르고 어떤 응답이 와야 하는지)을 사용자에게 단계별로 설명해야 합니다.
