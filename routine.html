@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- 모바일 뷰포트: 헬스장에서 한 손으로 조작하는 화면 기준 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GymMate - 오늘의 루틴</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!--
+    페이지 역할: 오늘의 루틴 (2단계)
+      [조건 선택] 목표·시간·부위 칩만 눌러서 끝(타이핑 없음, F2-1). 경력 선택은 없음(대상이 모두 0~2개월 초보라 사용자 결정으로 뺌) → [로딩] → [결과] principle 강조 → 워밍업 → 순서별 운동 카드
+    - 운동 카드를 누르면 해당 기구 카드(세팅법, 주의사항)가 펼쳐집니다.
+    - 생성된 루틴은 gm_routines에, 고른 조건은 gm_profile에 저장합니다.
+    - 세트 체크·휴식 타이머는 3단계(F3-1)라 이 페이지에 넣지 않습니다.
+    AI 결과는 js/routine.js에서 textContent로만 넣습니다.
+  -->
+  <div class="app-container">
+
+    <header class="app-header">
+      <div class="logo-area">
+        <span class="logo-icon">🏋️‍♂️</span>
+        <h1 class="logo-title">GymMate</h1>
+      </div>
+      <a href="index.html" class="back-link">← 내 헬스장</a>
+    </header>
+
+    <main class="main-content">
+
+      <!-- 등록 기구가 없을 때: 루틴은 등록 기구로만 만들기 때문에 먼저 등록하게 안내 -->
+      <section class="card empty-state" id="noEquipment" hidden>
+        <div class="empty-icon">📷</div>
+        <h2>등록한 기구가 없어요</h2>
+        <p>루틴은 내 헬스장에 등록한 기구로만 만들어요.<br>기구를 먼저 등록해 주세요.</p>
+        <a href="scan.html" class="btn btn-primary">기구 등록하러 가기</a>
+      </section>
+
+      <!-- 1. 조건 선택 (F2-1): 칩만 사용, 타이핑 없음 -->
+      <section class="routine-form" id="conditionSection" hidden>
+        <div class="intro-card">
+          <h2>오늘의 루틴</h2>
+          <p id="equipmentSummary">등록한 기구로 루틴을 만들어요.</p>
+        </div>
+
+        <!-- 각 칩 그룹은 data-field로 어떤 조건인지 표시하고, 칩의 data-value가 API로 보낼 값입니다. -->
+        <div class="form-group card">
+          <span class="form-label">🎯 목표</span>
+          <div class="chip-group" data-field="goal" role="radiogroup" aria-label="목표">
+            <button type="button" class="chip" data-value="근육 늘리기">근육 늘리기</button>
+            <button type="button" class="chip" data-value="체력">체력</button>
+            <button type="button" class="chip" data-value="체중 감량">체중 감량</button>
+          </div>
+        </div>
+
+        <div class="form-group card">
+          <span class="form-label">⏱️ 시간</span>
+          <div class="chip-group" data-field="minutes" role="radiogroup" aria-label="시간">
+            <button type="button" class="chip" data-value="30">30분</button>
+            <button type="button" class="chip" data-value="45">45분</button>
+            <button type="button" class="chip" data-value="60">60분</button>
+          </div>
+        </div>
+
+        <div class="form-group card">
+          <span class="form-label">💪 부위 <span class="label-hint">(괄호 안은 그 부위에 쓸 수 있는 내 기구 수)</span></span>
+          <!-- 부위 칩은 등록 기구의 target_muscles를 보고 js/routine.js가 만듭니다. -->
+          <div class="chip-group" data-field="body_part" id="bodyPartChips" role="radiogroup" aria-label="부위"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="generateBtn">✨ 루틴 만들기</button>
+      </section>
+
+      <!-- 2. 생성 중 로딩 -->
+      <section class="loading-section" id="loadingSection" hidden>
+        <div class="spinner"></div>
+        <p class="loading-title">내 기구로 루틴을 짜는 중이에요...</p>
+        <p class="loading-desc">보통 10초 안팎, 무료 AI가 붐비면 1~2분 걸릴 수 있어요.</p>
+      </section>
+
+      <!-- 3. 결과 -->
+      <section class="routine-result" id="resultSection" hidden>
+
+        <!-- 루틴 전체 원칙: 앱의 차별점이므로 맨 위에 크게 강조합니다. -->
+        <div class="card principle-card">
+          <p class="principle-label">💡 오늘 루틴의 원칙</p>
+          <p class="principle-text" id="principleText"></p>
+          <p class="routine-meta" id="routineMeta"></p>
+        </div>
+
+        <div class="card warmup-card">
+          <h3 class="guide-title"><span class="icon">🔥</span> 워밍업</h3>
+          <p id="warmupText"></p>
+        </div>
+
+        <p class="list-hint">운동을 누르면 기구 세팅법과 주의사항이 보여요.</p>
+        <ol class="exercise-list" id="exerciseList">
+          <!-- js/routine.js에서 순서별 운동 카드 생성 -->
+        </ol>
+
+        <!-- 안전 문구: 항상 표시 -->
+        <p class="pain-notice">🛑 통증이 있으면 멈추세요</p>
+
+        <div class="action-footer">
+          <button type="button" class="btn btn-outline" id="changeConditionBtn">⚙️ 조건 바꾸기</button>
+          <button type="button" class="btn btn-primary" id="regenerateBtn">🔄 다시 만들기</button>
+        </div>
+      </section>
+
+      <!-- 오류 알림 -->
+      <div class="error-banner" id="errorBanner" hidden>
+        <span class="error-icon">⚠️</span>
+        <div class="error-text-wrap">
+          <p class="error-msg-title" id="errorTitle"></p>
+          <p class="error-msg-desc" id="errorDesc"></p>
+        </div>
+        <button type="button" class="error-close-btn" id="errorCloseBtn" aria-label="닫기">&times;</button>
+      </div>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>© 2026 GymMate</p>
+    </footer>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/routine.js"></script>
+</body>
+</html>

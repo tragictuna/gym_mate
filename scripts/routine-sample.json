@@ -1,0 +1,13 @@
+{
+  "conditions": { "goal": "근육 늘리기", "minutes": 45, "body_part": "전신" },
+  "equipment": [
+    { "id": "eq_test01", "name_ko": "레그 프레스", "target_muscles": ["대퇴사두근", "둔근"] },
+    { "id": "eq_test02", "name_ko": "레그 익스텐션", "target_muscles": ["대퇴사두근"] },
+    { "id": "eq_test03", "name_ko": "레그 컬", "target_muscles": ["햄스트링"] },
+    { "id": "eq_test04", "name_ko": "랫 풀 다운", "target_muscles": ["광배근", "이두근"] },
+    { "id": "eq_test05", "name_ko": "시티드 로우", "target_muscles": ["광배근", "능형근"] },
+    { "id": "eq_test06", "name_ko": "체스트 프레스", "target_muscles": ["대흉근", "삼두근"] },
+    { "id": "eq_test07", "name_ko": "숄더 프레스", "target_muscles": ["삼각근", "삼두근"] },
+    { "id": "eq_test08", "name_ko": "케이블 크로스오버", "target_muscles": ["대흉근"] }
+  ]
+}

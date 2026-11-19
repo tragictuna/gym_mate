@@ -530,61 +530,10 @@ body {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 8. 2단계: 루틴 조건 설정 및 타임라인 스타일                                */
+/* 8. 공통 폼·선택 칩 (routine.html 조건 선택, scan.html 후보 선택에서 사용)     */
 /* -------------------------------------------------------------------------- */
-
-/* 조건 설정 섹션 */
-.routine-config-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: fadeIn 0.35s ease forwards;
-}
-
-.config-header-card {
-  text-align: left;
-}
-
-.config-main-title {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 6px 0 4px;
-}
-
-.config-sub-title {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.selected-equipment-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background-color: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  width: 100%;
-}
-
-.equip-icon {
-  font-size: 1.2rem;
-}
-
-.equip-text {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--primary-accent);
-}
-
-.config-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
+/* 예전 단일 페이지의 2단계 조건 폼·타임라인(9번), 3단계 휴식 타이머(10번) 스타일은
+   다중 페이지 구조로 바뀌며 쓰지 않게 되어 지웠습니다. 3단계 타이머는 workout.html을 만들 때 새로 작성합니다. */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -597,7 +546,6 @@ body {
   color: #ffffff;
 }
 
-/* 칩 그룹 (선택 버튼) */
 .chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -628,259 +576,6 @@ body {
   font-weight: 700;
 }
 
-/* 체크박스 그룹 */
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.custom-checkbox {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--text-main);
-  cursor: pointer;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  padding: 7px 12px;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
-}
-
-.custom-checkbox input[type="checkbox"] {
-  accent-color: var(--primary-accent);
-  width: 15px;
-  height: 15px;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 9. 2단계: 추천 루틴 타임라인 뷰                                            */
-/* -------------------------------------------------------------------------- */
-.routine-view-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: fadeIn 0.4s ease forwards;
-  padding-bottom: 70px; /* 플로팅 타이머 여백 확보 */
-}
-
-.routine-summary-card {
-  border-left: 4px solid var(--primary-accent);
-}
-
-.routine-title-text {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 6px 0;
-}
-
-.routine-guide-hint {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-/* 타임라인 컨테이너 */
-.timeline-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-}
-
-.timeline-card {
-  background-color: var(--bg-surface-elevated);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  transition: border-color 0.2s ease;
-}
-
-.timeline-card.completed {
-  border-color: rgba(34, 197, 94, 0.4);
-  background-color: rgba(34, 197, 94, 0.03);
-}
-
-.timeline-phase-badge {
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  margin-bottom: 6px;
-}
-
-.phase-warmup { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.phase-main { background: rgba(34, 197, 94, 0.2); color: var(--primary-accent); }
-.phase-accessory { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
-.phase-cooldown { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-
-.exercise-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.exercise-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.exercise-equip-tag {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-/* 세트 체크 리스트 */
-.sets-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 10px 0;
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-}
-
-.set-check-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.88rem;
-}
-
-.set-label-text {
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.set-target-text {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-
-.set-checkbox {
-  width: 22px;
-  height: 22px;
-  accent-color: var(--primary-accent);
-  cursor: pointer;
-}
-
-.coach-tip-box {
-  background-color: rgba(255, 255, 255, 0.03);
-  border-left: 3px solid var(--border-color);
-  padding: 8px 10px;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  font-size: 0.82rem;
-  color: #d1d5db;
-  margin-top: 8px;
-}
-
-.coach-tip-box .tip-prefix {
-  font-weight: 700;
-  color: var(--warning-color);
-  margin-right: 4px;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 10. 세트 휴식 플로팅 타이머                                               */
-/* -------------------------------------------------------------------------- */
-.floating-timer-bar {
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 448px;
-  background-color: #1a1e24;
-  border: 1px solid var(--primary-accent);
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  z-index: 100;
-  overflow: hidden;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translate(-50%, 40px); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-.timer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-}
-
-.timer-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.timer-label {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.timer-countdown {
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--primary-accent);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.timer-controls {
-  display: flex;
-  gap: 6px;
-}
-
-.timer-btn {
-  background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
-  color: #ffffff;
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.timer-btn:hover {
-  background-color: #374151;
-}
-
-.timer-btn.skip-btn {
-  background-color: rgba(34, 197, 94, 0.2);
-  border-color: var(--primary-accent);
-  color: var(--primary-accent);
-}
-
-.timer-progress-track {
-  width: 100%;
-  height: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.timer-progress-fill {
-  height: 100%;
-  width: 100%;
-  background-color: var(--primary-accent);
-  transition: width 1s linear;
-}
-
 /* -------------------------------------------------------------------------- */
 /* 11. 푸터                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -890,4 +585,405 @@ body {
   border-top: 1px solid var(--border-color);
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 12. 공통 보조 규칙                                                          */
+/* -------------------------------------------------------------------------- */
+/* hidden 속성을 단 요소는 클래스에 display:flex 등이 있어도 반드시 숨깁니다.
+   (브라우저 기본 [hidden]{display:none}은 클래스 규칙보다 약해서 덮어써지기 때문) */
+[hidden] {
+  display: none !important;
+}
+
+/* <a>에 .btn을 붙였을 때 밑줄 없이 버튼처럼 보이게 합니다. */
+a.btn {
+  text-decoration: none;
+}
+
+/* 비활성 버튼: 눌러도 반응이 없다는 것을 흐리게 보여 줍니다. */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 헤더 아래 '← 내 헬스장' 같은 뒤로 가기 링크 */
+.back-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--primary-accent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 13. 기구 등록 화면 (scan.html)                                              */
+/* -------------------------------------------------------------------------- */
+/* 촬영 안내 문구: 사진은 저장되지 않는다는 점을 눈에 띄게 알립니다. */
+.capture-guide {
+  margin: 12px 0;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: var(--radius-sm);
+}
+
+/* 촬영 / 앨범 버튼 두 개를 세로로 꽉 차게 배치 (휴대폰 한 손 터치) */
+.capture-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+.capture-buttons .btn {
+  width: 100%;
+}
+
+/* 확신도 낮음 안내 박스 (F1-2) */
+.low-confidence-card {
+  border-color: var(--warning-color);
+  margin-bottom: 12px;
+}
+.low-confidence-title {
+  font-weight: 700;
+  color: var(--warning-color);
+}
+.low-confidence-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 4px 0 12px;
+}
+
+/* 이름 수정 입력란 (F1-3) */
+.label-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.name-input {
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 12px 14px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--text-main);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+.name-input:focus {
+  outline: none;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* 결과 카드 아래 안전 문구: 항상 표시 */
+.pain-notice {
+  margin: 12px 0;
+  padding: 12px 14px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--danger-color);
+  background-color: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius-sm);
+}
+
+/* 저장 완료 화면 */
+.saved-section {
+  text-align: center;
+}
+.saved-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary-accent);
+}
+.saved-desc {
+  margin: 6px 0 14px;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 14. 홈 = 내 헬스장 (index.html)                                             */
+/* -------------------------------------------------------------------------- */
+/* 상단 행동 버튼: '오늘 운동 시작'을 크게, '기구 추가'를 그 아래에 */
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.home-actions .btn {
+  width: 100%;
+}
+/* <a> 버튼을 막을 때: disabled 속성이 없어 클래스로 흐리게 표시 (클릭은 home.js에서 막음) */
+.btn.is-disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* 빈 화면 안내 */
+.empty-state {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+}
+.empty-icon {
+  font-size: 2.4rem;
+}
+.empty-state h2 {
+  font-size: 1.1rem;
+}
+.empty-state p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.empty-state .btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* 목록 제목 */
+.section-title {
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+}
+.section-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-accent);
+}
+
+/* 기구 목록 */
+.equipment-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.equipment-item {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.equipment-item.open {
+  border-color: var(--primary-accent);
+}
+.equipment-row {
+  display: flex;
+  align-items: stretch;
+}
+/* 이름 + 근육 영역 전체가 펼침 버튼 (터치 영역을 넓게) */
+.equipment-toggle {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  text-align: left;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 56px;
+}
+.equipment-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+.equipment-muscles {
+  grid-row: 2;
+  font-size: 0.82rem;
+  color: var(--primary-accent);
+}
+.equipment-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.equipment-item.open .equipment-chevron {
+  transform: rotate(180deg);
+}
+/* 삭제 아이콘 버튼 */
+.icon-btn {
+  width: 52px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.delete-btn:hover {
+  color: var(--danger-color);
+  background-color: var(--danger-bg);
+}
+/* 펼친 기구 카드 (F1-5) */
+.equipment-panel {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.equipment-panel .equipment-name-en {
+  margin-top: 8px;
+}
+.equipment-role {
+  font-size: 0.9rem;
+}
+.equipment-panel .pain-notice {
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 15. 오늘의 루틴 (routine.html)                                              */
+/* -------------------------------------------------------------------------- */
+/* 가로로 꽉 찬 버튼 */
+.btn-block {
+  width: 100%;
+}
+
+/* 조건 선택·결과 섹션: 카드 사이 간격 */
+.routine-form,
+.routine-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 루틴 전체 원칙: 앱의 차별점이라 가장 눈에 띄게 (초록 테두리 + 큰 글씨) */
+.principle-card {
+  border: 2px solid var(--primary-accent);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), var(--bg-surface-elevated) 70%);
+}
+.principle-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+.principle-text {
+  margin-top: 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.routine-meta {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.warmup-card p {
+  margin-top: 6px;
+  font-size: 0.92rem;
+}
+
+.list-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* 순서별 운동 카드 */
+.exercise-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exercise-item {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.exercise-item.open {
+  border-color: var(--primary-accent);
+}
+/* 카드 윗부분 전체가 펼침 버튼 (터치 영역을 넓게) */
+.exercise-toggle {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+/* 순서 번호 동그라미 */
+.exercise-order {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #000000;
+  background-color: var(--primary-accent);
+}
+.exercise-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.exercise-title {
+  font-weight: 800;
+  font-size: 1rem;
+}
+.exercise-equipment {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.exercise-dose {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+/* 이 순서인 이유: 접혀 있어도 항상 보이는 핵심 문장 */
+.exercise-why {
+  margin-top: 6px;
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  background-color: var(--bg-surface);
+  border-left: 3px solid var(--primary-accent);
+  border-radius: var(--radius-sm);
+}
+.exercise-item .equipment-chevron {
+  margin-top: 4px;
+}
+.exercise-item.open .equipment-chevron {
+  transform: rotate(180deg);
+}
+/* 펼친 기구 카드 */
+.exercise-panel {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exercise-panel .equipment-role {
+  margin-top: 10px;
 }

@@ -23,7 +23,7 @@
 - 패키지 의존성(npm dependencies)은 서버리스 함수에 필요한 최소한(예: node-fetch 등 필요 시)으로 제한하며, 프론트엔드 번들러는 일체 두지 않습니다.
 
 ### 📌 규칙 2. OpenRouter API 호출 및 보안 규칙
-- **호출 위치:** OpenRouter API 호출은 반드시 **`api/` 폴더 안의 서버리스 함수**에서만 수행합니다. 클라이언트 브라우저(`script.js`)에서 직접 OpenRouter로 요청을 보내는 것은 보안상 엄격히 금지됩니다.
+- **호출 위치:** OpenRouter API 호출은 반드시 **`api/` 폴더 안의 서버리스 함수**에서만 수행합니다. 클라이언트 브라우저(`js/*.js`)에서 직접 OpenRouter로 요청을 보내는 것은 보안상 엄격히 금지됩니다.
 - **환경 변수 사양:**
   - API Key: `process.env.OPENROUTER_API_KEY`
   - 모델명: `process.env.OPENROUTER_MODEL` (환경변수 미설정 시 기본값: `"google/gemma-4-26b-a4b-it:free"`)
@@ -82,7 +82,7 @@ gymmate/
 | 키 | 내용 | 단계 |
 |---|---|---|
 | `gm_equipment` | 등록 기구 목록 `{id, name_ko, name_en, target_muscles[], role, setup[], cautions[], created_at}` | 1 |
-| `gm_profile` | 마지막 조건 `{goal, experience, default_minutes}` | 2 |
+| `gm_profile` | 마지막 조건 `{goal, default_minutes}` (PRD의 experience는 사용자 결정으로 제외) | 2 |
 | `gm_routines` | 생성 루틴 `{id, date, conditions, principle, warmup, exercises}` | 2 |
 | `gm_logs` | 운동 기록 | 3 |
 
@@ -105,7 +105,8 @@ flowchart LR
 4. **홈 (`index.html`):** 등록 기구 목록, 기구 카드 열기(F1-5), 삭제 확인(F1-4)
 
 ### [Step 2] 2단계: 오늘의 루틴
-1. **조건 선택 (F2-1):** 칩만 사용(타이핑 없음) — 목표(근육 늘리기/체력/체중 감량), 시간(30/45/60분), 부위, 경력(0~1개월/1~2개월). 마지막 값은 `gm_profile`에 저장
+1. **조건 선택 (F2-1):** 칩만 사용(타이핑 없음) — 목표(근육 늘리기/체력/체중 감량), 시간(30/45/60분), 부위. 마지막 값은 `gm_profile`에 저장
+   - 경력 선택은 하지 않습니다. 대상이 모두 헬스 0~2개월 초보라 의미가 없어 뺐습니다(2026-11-19 사용자 결정, PRD와 다른 부분).
 2. **루틴 API (`api/routine.js`):** 등록 기구 목록만 사용, `{principle, total_minutes, warmup, exercises[{order, equipment_id, exercise, sets, reps, rest_sec, why_this_order}]}` 반환, 목록에 없는 기구는 서버에서 걸러냄(`filtered_count`)
 3. **결과 화면:** principle 강조 → 워밍업 → 순서별 운동 카드(누르면 기구 카드), `gm_routines`에 저장, 다시 만들기
 

@@ -104,7 +104,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2-2. 정적 파일 서빙 (index.html, css/style.css, script.js 등)
+  // 2-2. 정적 파일 서빙 (index.html, scan.html, css/style.css, js/*.js 등)
   let relativeFilePath = pathname === "/" ? "index.html" : pathname.slice(1);
   const safeFilePath = path.join(__dirname, path.normalize(relativeFilePath));
 
