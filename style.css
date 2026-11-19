@@ -259,6 +259,141 @@ body {
   width: 100%;
 }
 
+/* 다중 미리보기 헤더 (장수 뱃지 + 다시선택 링크) */
+.multi-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* 텍스트 링크 버튼 */
+.btn-text-link {
+  background: none;
+  border: none;
+  color: var(--primary-accent);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+/* 썸네일 그리드 (3열 균등 배치) */
+.multi-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+/* 썸네일 아이템 */
+.multi-thumb-item {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  aspect-ratio: 1 / 1;
+}
+
+.multi-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 썸네일 번호 뱃지 */
+.multi-thumb-label {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* 썸네일 제거(✕) 버튼 */
+.multi-thumb-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ---- 다중 결과 헤더 ---- */
+.multi-result-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0 0 8px;
+}
+
+.multi-result-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---- 다중 기구 선택 카드 ---- */
+.multi-equip-card {
+  margin-bottom: 12px;
+  cursor: pointer;
+  border: 2px solid var(--border-color);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.multi-equip-card:hover {
+  border-color: var(--primary-accent);
+}
+
+/* 선택된 카드 하이라이트 */
+.multi-equip-card--selected {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.multi-equip-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* 선택 인디케이터 텍스트 */
+.multi-equip-select-indicator {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-accent);
+  white-space: nowrap;
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+/* 접힌 상세 섹션 */
+.multi-equip-details summary {
+  font-size: 0.85rem;
+  color: var(--primary-accent);
+  cursor: pointer;
+  margin-top: 10px;
+  user-select: none;
+}
+
 /* -------------------------------------------------------------------------- */
 /* 4. 버튼 공통 스타일 (터치 최적화)                                          */
 /* -------------------------------------------------------------------------- */

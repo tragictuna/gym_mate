@@ -41,7 +41,7 @@ const dropZone = document.getElementById("dropZone");
 const dropPrompt = document.getElementById("dropPrompt");
 const selectBtn = document.getElementById("selectBtn");
 const previewContainer = document.getElementById("previewContainer");
-const previewImage = document.getElementById("previewImage");
+// previewImage는 다중 이미지 모드로 전환 후 사용하지 않음 (multiThumbGrid로 대체)
 const reselectBtn = document.getElementById("reselectBtn");
 const analyzeBtn = document.getElementById("analyzeBtn");
 
@@ -66,7 +66,15 @@ const setupGuideList = document.getElementById("setupGuideList");
 const executionGuideList = document.getElementById("executionGuideList");
 const cautionList = document.getElementById("cautionList");
 
-// 2단계: 루틴 조건 설정 DOM
+// DOM 추가 참조 (다중 미리보기 영역)
+const multiThumbGrid = document.getElementById("multiThumbGrid");
+const selectedCountBadge = document.getElementById("selectedCountBadge");
+const multiResultCardsContainer = document.getElementById("multiResultCardsContainer");
+const multiResultHeader = document.getElementById("multiResultHeader");
+const resultCountBadge = document.getElementById("resultCountBadge");
+const singleResultDetail = document.getElementById("singleResultDetail");
+const loadingTitle = document.getElementById("loadingTitle");
+const loadingDesc = document.getElementById("loadingDesc");
 const routineConfigSection = document.getElementById("routineConfigSection");
 const routineConfigForm = document.getElementById("routineConfigForm");
 const equipPresetChipGroup = document.getElementById("equipPresetChipGroup");
@@ -145,7 +153,9 @@ const errorCloseBtn = document.getElementById("errorCloseBtn");
 // 3. 전역 상태 관리
 // -----------------------------------------------------------------------------
 let currentBase64Image = null;
-let lastAnalyzedEquipmentData = null; // 1단계 기구 분석 결과
+let currentBase64Images = []; // 다중 이미지 배열 (여러 장 선택 시 사용)
+let lastAnalyzedEquipmentData = null; // 1단계 기구 분석 결과 (가장 최근 선택된 단일 기구)
+let allAnalyzedEquipments = [];       // 다중 분석 결과 전체 배열
 let currentRoutineData = null;        // 2단계 생성 루틴 결과
 let pendingSessionToSave = null;      // 3단계 저장 대기 세션 데이터
 
@@ -574,16 +584,18 @@ profileForm.addEventListener("submit", (e) => {
 });
 
 // -----------------------------------------------------------------------------
-// 7. [1단계] 이미지 업로드, 리사이징 & 분석
+// 7. [1단계] 이미지 업로드, 리사이징 & 분석 (다중 이미지 지원)
 // -----------------------------------------------------------------------------
 selectBtn.addEventListener("click", () => imageInput.click());
 reselectBtn.addEventListener("click", () => imageInput.click());
 
+// 파일 인풋 변경 이벤트 (multiple 속성으로 여러 파일 동시 선택 가능)
 imageInput.addEventListener("change", (e) => {
-  const file = e.target.files?.[0];
-  if (file) processSelectedFile(file);
+  const files = Array.from(e.target.files || []);
+  if (files.length > 0) processSelectedFiles(files);
 });
 
+// 드래그 앤 드롭 (여러 파일 한 번에 드롭 지원)
 dropZone.addEventListener("dragover", (e) => {
   e.preventDefault();
   dropZone.classList.add("dragover");
@@ -594,55 +606,115 @@ dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover
 dropZone.addEventListener("drop", (e) => {
   e.preventDefault();
   dropZone.classList.remove("dragover");
-  const file = e.dataTransfer.files?.[0];
-  if (file) processSelectedFile(file);
+  const files = Array.from(e.dataTransfer.files || []);
+  if (files.length > 0) processSelectedFiles(files);
 });
 
-function processSelectedFile(file) {
-  if (!file.type.startsWith("image/")) {
+/**
+ * 여러 개의 이미지 파일을 받아 각각 리사이징 후 Base64로 변환,
+ * 썸네일 그리드에 미리보기를 표시합니다.
+ * @param {File[]} files - 선택된 파일 배열
+ */
+function processSelectedFiles(files) {
+  // 이미지 파일만 필터링
+  const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+  if (imageFiles.length === 0) {
     showError("지원되지 않는 파일", "이미지 파일(.jpg, .png, .webp)만 업로드 가능합니다.");
+    return;
+  }
+  // 최대 10장으로 제한 (API 호출 과부하 방지)
+  if (imageFiles.length > 10) {
+    showError("선택 초과", "한 번에 최대 10장까지 선택할 수 있습니다.");
     return;
   }
   hideError();
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX_DIM = 1280;
-      let width = img.width;
-      let height = img.height;
+  currentBase64Images = []; // 이전 선택 초기화
+  multiThumbGrid.innerHTML = "";
 
-      if (width > height) {
-        if (width > MAX_DIM) {
-          height = Math.round((height * MAX_DIM) / width);
-          width = MAX_DIM;
+  // 각 파일을 순서대로 리사이징 & Base64 변환 후 썸네일에 추가
+  let processedCount = 0;
+  imageFiles.forEach((file, idx) => {
+    resizeImageToBase64(file).then((base64) => {
+      currentBase64Images[idx] = base64; // 순서 보장을 위해 인덱스로 저장
+      processedCount++;
+
+      // 썸네일 카드 생성
+      const thumb = document.createElement("div");
+      thumb.className = "multi-thumb-item";
+      thumb.innerHTML = `
+        <img src="${base64}" alt="선택 이미지 ${idx + 1}" class="multi-thumb-img">
+        <button type="button" class="multi-thumb-remove" data-idx="${idx}" title="이 사진 제거">✕</button>
+        <span class="multi-thumb-label">${idx + 1}</span>
+      `;
+      // 썸네일 개별 제거 버튼
+      thumb.querySelector(".multi-thumb-remove").addEventListener("click", () => {
+        currentBase64Images[idx] = null; // 해당 슬롯 null로 비움
+        thumb.remove();
+        const remaining = currentBase64Images.filter(Boolean).length;
+        selectedCountBadge.textContent = `${remaining}장 선택됨`;
+        if (remaining === 0) {
+          previewContainer.style.display = "none";
+          dropPrompt.style.display = "block";
         }
-      } else {
-        if (height > MAX_DIM) {
-          width = Math.round((width * MAX_DIM) / height);
-          height = MAX_DIM;
-        }
+      });
+      multiThumbGrid.appendChild(thumb);
+
+      // 모든 파일 처리 완료 시 미리보기 영역 노출
+      if (processedCount === imageFiles.length) {
+        selectedCountBadge.textContent = `${imageFiles.length}장 선택됨`;
+        dropPrompt.style.display = "none";
+        previewContainer.style.display = "flex";
+        // 하위 호환: 단일 이미지 흐름에서 사용하는 currentBase64Image도 갱신
+        currentBase64Image = currentBase64Images.find(Boolean) || null;
       }
+    });
+  });
+}
 
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
+/**
+ * 이미지 파일 한 장을 최대 1280px로 리사이징 후 JPEG Base64 문자열로 반환합니다.
+ * @param {File} file - 이미지 파일
+ * @returns {Promise<string>} Base64 Data URL
+ */
+function resizeImageToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1280;
+        let width = img.width;
+        let height = img.height;
 
-      currentBase64Image = canvas.toDataURL("image/jpeg", 0.85);
-      previewImage.src = currentBase64Image;
-      dropPrompt.style.display = "none";
-      previewContainer.style.display = "flex";
+        if (width > height) {
+          if (width > MAX_DIM) { height = Math.round((height * MAX_DIM) / width); width = MAX_DIM; }
+        } else {
+          if (height > MAX_DIM) { width = Math.round((width * MAX_DIM) / height); height = MAX_DIM; }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = e.target.result;
     };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
+}
+
+// 하위 호환: 단일 파일 처리 함수 (내부적으로 processSelectedFiles 위임)
+function processSelectedFile(file) {
+  processSelectedFiles([file]);
 }
 
 analyzeBtn.addEventListener("click", async () => {
-  if (!currentBase64Image) {
+  // null 슬롯 제거 후 유효한 이미지만 추출
+  const validImages = currentBase64Images.filter(Boolean);
+
+  if (validImages.length === 0) {
     showError("이미지 없음", "먼저 기구 사진을 선택해 주세요.");
     return;
   }
@@ -652,46 +724,49 @@ analyzeBtn.addEventListener("click", async () => {
   resultSection.style.display = "none";
   hideError();
 
+  // 여러 장이면 로딩 텍스트에 진행 상황 표시
+  if (loadingTitle) loadingTitle.textContent = `AI가 ${validImages.length}개 기구를 분석하고 있습니다...`;
+  if (loadingDesc) loadingDesc.textContent = `Gemma 4 26B 비전 모델이 사진 ${validImages.length}장을 순서대로 확인 중입니다.`;
+
   try {
-    const response = await fetch("/api/analyze-equipment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: currentBase64Image })
-    });
+    // 모든 이미지를 병렬로 API 호출 (Promise.allSettled로 일부 실패해도 나머지 결과 활용)
+    const results = await Promise.allSettled(
+      validImages.map((base64) => analyzeOneImage(base64))
+    );
 
-    const responseText = await response.text();
-    let resJson;
-    try {
-      resJson = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error("[서버 응답 파싱 실패]:", response.status, responseText);
-      throw new Error(`서버 응답 오류 (HTTP ${response.status}): ${responseText.substring(0, 150)}`);
-    }
+    // 성공한 결과만 추출
+    const successResults = results
+      .filter((r) => r.status === "fulfilled" && r.value !== null)
+      .map((r) => r.value);
 
-    if (!response.ok || !resJson.success) {
-      throw new Error(resJson.error || "기구 분석 중 오류가 발생했습니다.");
-    }
+    // 헬스장 기구로 인식된 것만 필터링
+    const equipResults = successResults.filter((r) => r.is_gym_equipment);
+    const failCount = validImages.length - equipResults.length;
 
-    const result = resJson.data;
-
-    if (!result.is_gym_equipment) {
+    if (equipResults.length === 0) {
       loadingSection.style.display = "none";
       uploadSection.style.display = "block";
       showError(
         "기구 인식 불가",
-        result.non_equipment_message || "헬스장 기구가 명확히 보이는 사진을 다시 촬영해 주세요."
+        failCount > 0
+          ? `${validImages.length}장 모두 헬스장 기구를 인식하지 못했습니다. 기구 전체가 잘 보이는 사진을 다시 선택해 주세요.`
+          : "헬스장 기구가 명확히 보이는 사진을 다시 촬영해 주세요."
       );
       return;
     }
 
-    lastAnalyzedEquipmentData = result;
-    renderAnalysisResult(result);
-    checkPastHistoryForEquipment(result.equipment?.name_ko);
+    // 분석된 모든 기구를 전역 상태 및 프로필에 저장
+    allAnalyzedEquipments = equipResults;
+    lastAnalyzedEquipmentData = equipResults[0]; // 가장 첫 번째를 기본 선택으로 설정
 
-    // 1단계에서 인식된 기구를 프로필에 자동 저장 (루틴 추천 탭에 영구 등록)
-    if (result.equipment) {
-      addRecognizedEquipmentToProfile(result.equipment);
-    }
+    equipResults.forEach((result) => {
+      if (result.equipment) {
+        addRecognizedEquipmentToProfile(result.equipment);
+      }
+    });
+
+    // 결과 화면 렌더링
+    renderMultiAnalysisResult(equipResults, failCount);
 
     loadingSection.style.display = "none";
     resultSection.style.display = "flex";
@@ -703,6 +778,128 @@ analyzeBtn.addEventListener("click", async () => {
     showError("분석 실패", error.message || "서버 통신에 실패했습니다.");
   }
 });
+
+/**
+ * 이미지 한 장을 서버 API에 전달해 분석 결과를 반환합니다.
+ * @param {string} base64 - Base64 Data URL
+ * @returns {Promise<object|null>} 분석 결과 또는 실패 시 null
+ */
+async function analyzeOneImage(base64) {
+  const response = await fetch("/api/analyze-equipment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: base64 })
+  });
+
+  const responseText = await response.text();
+  let resJson;
+  try {
+    resJson = JSON.parse(responseText);
+  } catch (parseErr) {
+    console.error("[서버 응답 파싱 실패]:", response.status, responseText);
+    return null;
+  }
+
+  if (!response.ok || !resJson.success) {
+    console.error("[분석 API 오류]:", resJson.error);
+    return null;
+  }
+
+  return resJson.data;
+}
+
+/**
+ * 여러 기구 분석 결과를 카드 목록으로 렌더링합니다.
+ * 단일 결과이면 기존 상세 카드를 그대로 표시합니다.
+ * @param {object[]} results - 분석된 기구 결과 배열
+ * @param {number} failCount - 인식 실패한 사진 수
+ */
+function renderMultiAnalysisResult(results, failCount) {
+  multiResultCardsContainer.innerHTML = "";
+
+  if (results.length === 1) {
+    // 단일 결과: 기존 상세 카드 표시 (하위 호환)
+    multiResultHeader.style.display = "none";
+    singleResultDetail.style.display = "block";
+    renderAnalysisResult(results[0]);
+    checkPastHistoryForEquipment(results[0].equipment?.name_ko);
+    return;
+  }
+
+  // 다중 결과: 요약 헤더 + 선택형 카드 목록 표시
+  multiResultHeader.style.display = "flex";
+  singleResultDetail.style.display = "none";
+  resultCountBadge.textContent =
+    failCount > 0
+      ? `${results.length}개 인식됨 (${failCount}장 실패)`
+      : `${results.length}개 기구 인식됨`;
+
+  results.forEach((result, idx) => {
+    const equip = result.equipment || {};
+    const isFirst = idx === 0;
+
+    const card = document.createElement("div");
+    card.className = `card multi-equip-card ${isFirst ? "multi-equip-card--selected" : ""}`;
+    card.innerHTML = `
+      <div class="multi-equip-card-header">
+        <div>
+          <div class="badge-row">
+            <span class="badge badge-primary">${equip.category || "머신 웨이트"}</span>
+            <span class="badge badge-difficulty">${equip.difficulty || "초급"}</span>
+          </div>
+          <h3 class="equipment-name-ko" style="margin-top:8px;">${equip.name_ko || "기구명 미상"}</h3>
+          <p class="equipment-name-en">${equip.name_en || ""}</p>
+        </div>
+        <div class="multi-equip-select-indicator">${isFirst ? "✅ 선택됨" : "선택하기"}</div>
+      </div>
+      <div class="target-muscles">
+        <div class="muscle-item">
+          <span class="muscle-label">주동근:</span>
+          <span class="muscle-value primary-muscle">${equip.primary_muscle || "전신"}</span>
+        </div>
+        <div class="muscle-item">
+          <span class="muscle-label">협응근:</span>
+          <span class="muscle-value">${Array.isArray(equip.secondary_muscles) ? equip.secondary_muscles.join(", ") : "없음"}</span>
+        </div>
+      </div>
+      <!-- 세팅/동작/주의사항 접힌 상세 (클릭 시 펼침) -->
+      <details class="multi-equip-details">
+        <summary>세팅법 & 주의사항 보기</summary>
+        <div class="guide-block" style="margin-top:12px;">
+          <h4 class="guide-title"><span class="icon">⚙️</span> 세팅법</h4>
+          <ul class="guide-list">${(equip.setup_guide || []).map((s) => `<li>${s}</li>`).join("")}</ul>
+        </div>
+        <div class="guide-block">
+          <h4 class="guide-title"><span class="icon">💪</span> 동작 가이드</h4>
+          <ol class="guide-list numbered">${(equip.execution_guide || []).map((s) => `<li>${s}</li>`).join("")}</ol>
+        </div>
+        <div class="guide-block alert-block">
+          <h4 class="guide-title warning"><span class="icon">⚠️</span> 주의사항</h4>
+          <ul class="guide-list warning-list">${(equip.beginner_cautions || []).map((s) => `<li>${s}</li>`).join("")}</ul>
+        </div>
+      </details>
+    `;
+
+    // 카드 클릭 시 해당 기구를 "선택됨"으로 변경 (루틴 추천에 연동될 메인 기구 결정)
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".multi-equip-card").forEach((c) => {
+        c.classList.remove("multi-equip-card--selected");
+        const indicator = c.querySelector(".multi-equip-select-indicator");
+        if (indicator) indicator.textContent = "선택하기";
+      });
+      card.classList.add("multi-equip-card--selected");
+      const indicator = card.querySelector(".multi-equip-select-indicator");
+      if (indicator) indicator.textContent = "✅ 선택됨";
+      // 선택된 기구를 lastAnalyzedEquipmentData에 반영
+      lastAnalyzedEquipmentData = result;
+    });
+
+    multiResultCardsContainer.appendChild(card);
+  });
+
+  // 과거 기록 배너는 첫 번째 기구 기준으로 표시
+  checkPastHistoryForEquipment(results[0].equipment?.name_ko);
+}
 
 /** 1단계 결과 렌더링 */
 function renderAnalysisResult(data) {
@@ -776,13 +973,17 @@ function checkPastHistoryForEquipment(equipName) {
 }
 
 resetBtn.addEventListener("click", () => {
-  // 분석 결과 및 이미지 상태 초기화 (lastAnalyzedEquipmentData를 먼저 비워야
-  // switchTab 내부에서 resultSection이 다시 열리는 버그를 방지할 수 있음)
+  // 분석 결과 및 이미지 상태 전체 초기화
   currentBase64Image = null;
+  currentBase64Images = [];
   lastAnalyzedEquipmentData = null;
+  allAnalyzedEquipments = [];
 
   imageInput.value = "";
-  previewImage.src = "";
+  multiThumbGrid.innerHTML = "";
+  multiResultCardsContainer.innerHTML = "";
+  multiResultHeader.style.display = "none";
+  singleResultDetail.style.display = "none";
   previewContainer.style.display = "none";
   dropPrompt.style.display = "block";
   pastHistoryBanner.style.display = "none";
