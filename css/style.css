@@ -1,38 +1,51 @@
 /**
  * ==============================================================================
- * 파일명: style.css
- * 설명: GymMate 모바일 퍼스트 반응형 스타일시트 (피트니스 테마)
+ * 파일명: css/style.css
+ * 설명: GymMate 공통 스타일시트 (모바일 퍼스트)
+ *   - 작업 6-B: 다크 + 네온 그린 테마 → 밝은 크림 + 딥그린 테마로 변경했습니다.
+ *     :root 변수를 바꿔 index.html(홈), scan.html(기구 등록), routine.html(오늘의 운동)이 같은 테마를 따릅니다.
+ *   - 색은 '오늘의 운동' 시안에서 뽑은 근삿값입니다(1.md 작업 6-B).
+ *   - 글꼴은 각 HTML에서 Pretendard를 CDN <link>로 불러옵니다(빌드 도구 없음).
  * ==============================================================================
  */
 
 /* -------------------------------------------------------------------------- */
-/* 1. 디자인 시스템 변수 및 전역 리셋                                         */
+/* 1. 디자인 변수 · 리셋                                                       */
 /* -------------------------------------------------------------------------- */
 :root {
-  /* 메인 색상 팔레트 (다크 모드 베이스 + 활력 있는 네온 라임/그린 포인트) */
-  --bg-primary: #121417;        /* 전체 배경 어두운 차콜 */
-  --bg-surface: #1e2229;        /* 카드 및 컨테이너 배경 */
-  --bg-surface-elevated: #282d37;/* 호버 및 강조 표면 */
-  
-  --primary-accent: #22c55e;    /* 활력 있는 운동 테마 초록색 (Green 500) */
-  --primary-accent-hover: #16a34a;
-  --accent-glow: rgba(34, 197, 94, 0.25);
+  /* 시안 색 (1.md 작업 6-B) */
+  --bg-page: #E3E8E5;        /* PC에서 앱 바깥 배경 */
+  --bg-app: #F8F8F3;         /* 앱 배경 (크림) */
+  --surface: #FFFFFF;        /* 카드 */
+  --primary: #1F7A5A;        /* 딥그린: 강조 텍스트, 선택 테두리, CTA */
+  --primary-weak: #E5F2EB;   /* 연한 초록: 태그, AI 추천 배지, 선택 카드 배경 */
+  --primary-mid: #5FAE8A;    /* 몸 일러스트 보조 부위 */
+  --note-bg: #F4EFE6;        /* '선배' 이유 박스 (베이지) */
+  --text-main: #191919;
+  --text-sub: #6E6E6E;
+  --text-hint: #9A9A9A;
+  --border: #E7E7E1;
+  --figure-base: #E4E6E3;    /* 몸 일러스트 기본 회색 */
 
-  --text-main: #f3f4f6;         /* 기본 텍스트 (아이보리 화이트) */
-  --text-muted: #9ca3af;        /* 보조 설명 텍스트 (그레이) */
-  --border-color: #374151;      /* 경계선 색상 */
+  /* 상태 색 (밝은 배경에서 읽히도록 조정) */
+  --danger: #C2413A;
+  --danger-bg: #FBEDEB;
+  --warning: #A86A12;
+  --warning-bg: #FBF3E3;
 
-  --danger-color: #ef4444;      /* 경고/주의 색상 (Red) */
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --warning-color: #f59e0b;     /* 알림 색상 (Amber) */
+  /* 모양 */
+  --radius-card: 20px;
+  --radius-chip: 999px;
+  --radius-cta: 18px;
+  --radius-sm: 12px;
+  --shadow-card: 0 2px 12px rgba(25, 25, 25, 0.04); /* 시안: 아주 옅은 그림자 */
 
-  /* 타이포그래피 및 여백 */
-  --font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+  /* 하단 고정 버튼 영역 높이 (버튼 60px + 위아래 여백) — 본문 맨 아래 여백 계산에 사용 */
+  --cta-height: 60px;
+  --cta-gap: 16px;
+
+  --font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 * {
@@ -43,677 +56,505 @@
 
 body {
   font-family: var(--font-family);
-  background-color: var(--bg-primary);
+  background-color: var(--bg-page);
   color: var(--text-main);
-  line-height: 1.6;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
+  word-break: keep-all; /* 한국어 단어 중간에서 줄이 바뀌지 않게 */
+}
+
+/* hidden 속성을 단 요소는 클래스에 display가 있어도 반드시 숨깁니다. (기본 [hidden]은 클래스 규칙보다 약함) */
+[hidden] {
+  display: none !important;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+/* 키보드 사용자를 위한 포커스 표시 */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* -------------------------------------------------------------------------- */
-/* 2. 레이아웃 컨테이너 (스마트폰 최적화)                                      */
+/* 2. 앱 컨테이너: 모바일은 화면 전체, PC는 바깥 배경 위에 둥글게 띄움          */
 /* -------------------------------------------------------------------------- */
 .app-container {
   width: 100%;
-  max-width: 480px; /* 스마트폰 및 태블릿 한 손 조작 뷰에 최적화 */
+  max-width: 480px;
   min-height: 100vh;
-  background-color: var(--bg-surface);
+  margin: 0 auto;
+  background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  position: relative;
-  overflow-x: hidden;
 }
 
-/* 상단 헤더 */
+@media (min-width: 520px) {
+  .app-container {
+    margin: 24px auto;
+    min-height: calc(100vh - 48px);
+    border-radius: 32px;
+    overflow: hidden;
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding: 16px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. 공통 헤더 (index.html, scan.html)                                        */
+/* -------------------------------------------------------------------------- */
 .app-header {
-  padding: 20px 24px 16px;
-  background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-color);
+  padding: 22px 20px 6px;
   text-align: center;
 }
-
 .logo-area {
-  display: flex;
+  display: flex; /* 한 줄 전체를 차지해야 아래 '← 내 헬스장' 링크가 로고 옆에 붙지 않습니다. */
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
-
 .logo-icon {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
 }
-
 .logo-title {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #ffffff;
+  color: var(--primary);
+  letter-spacing: -0.01em;
 }
-
 .header-subtitle {
+  margin-top: 2px;
   font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 4px;
+  color: var(--text-sub);
 }
-
-/* 진행 단계 인디케이터 */
-.step-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 28px;
-  background-color: rgba(0, 0, 0, 0.15);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.back-link {
+  display: inline-block;
+  margin-top: 6px;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-sub);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--primary);
 }
 
-.step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background-color: var(--border-color);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-}
-
-.step-item.active {
-  color: var(--primary-accent);
-}
-
-.step-item.active .step-num {
-  background-color: var(--primary-accent);
-  color: #000000;
-  font-weight: 700;
-}
-
-.step-item.disabled {
-  opacity: 0.45;
-}
-
-.step-divider {
-  flex-grow: 1;
-  height: 2px;
-  background-color: var(--border-color);
-  margin: 0 8px;
-}
-
-/* 메인 컨텐츠 영역 */
-.main-content {
-  flex: 1;
-  padding: 20px 18px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* 안내 카드 */
-.intro-card {
-  text-align: center;
-  padding: 8px 12px;
-}
-
+/* 안내 카드 (scan.html 상단) */
 .intro-card h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
 }
-
 .intro-card p {
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  margin-top: 4px;
+  font-size: 0.92rem;
+  color: var(--text-sub);
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.section-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
 /* -------------------------------------------------------------------------- */
-/* 3. 이미지 업로드 섹션 & 드롭존                                             */
+/* 4. 카드 · 버튼 · 칩 · 입력                                                   */
 /* -------------------------------------------------------------------------- */
-.upload-section {
-  width: 100%;
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
 }
 
-.drop-zone {
-  border: 2px dashed var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 30px 16px;
-  text-align: center;
-  background-color: rgba(255, 255, 255, 0.02);
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.drop-zone:hover, .drop-zone.dragover {
-  border-color: var(--primary-accent);
-  background-color: rgba(34, 197, 94, 0.05);
-}
-
-.upload-icon-circle {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: var(--bg-surface-elevated);
-  font-size: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  border: 1px solid var(--border-color);
-}
-
-.primary-text {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 4px;
-}
-
-.secondary-text {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-bottom: 18px;
-}
-
-/* 이미지 미리보기 컨테이너 */
-.preview-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.preview-img {
-  width: 100%;
-  max-height: 280px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.preview-actions {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 4. 버튼 공통 스타일 (터치 최적화)                                          */
-/* -------------------------------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 13px 20px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 48px; /* 한 손 터치 최소 표준 높이 */
-}
-
-.btn-primary {
-  background-color: var(--primary-accent);
-  color: #000000;
-  flex: 1;
-  box-shadow: 0 4px 14px var(--accent-glow);
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-accent-hover);
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background-color: var(--bg-surface-elevated);
-  color: #ffffff;
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover {
-  background-color: #323846;
-}
-
-.btn-outline {
-  background-color: transparent;
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-}
-
-.btn-outline:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* -------------------------------------------------------------------------- */
-/* 5. 로딩 인디케이터                                                         */
-/* -------------------------------------------------------------------------- */
-.loading-section {
-  text-align: center;
-  padding: 40px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--primary-accent);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 6px;
-}
-
-.loading-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-/* -------------------------------------------------------------------------- */
-/* 6. 결과 표시 카드 섹션                                                     */
-/* -------------------------------------------------------------------------- */
-.result-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  animation: fadeIn 0.4s ease forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card {
-  background-color: var(--bg-surface-elevated);
-  border-radius: var(--radius-md);
-  padding: 18px 20px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-/* 기구 헤더 */
-.badge-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 9999px;
-}
-
-.badge-primary {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: var(--primary-accent);
-}
-
-.badge-difficulty {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: var(--warning-color);
-}
-
-.equipment-name-ko {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.2;
-}
-
-.equipment-name-en {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: 14px;
-}
-
-.target-muscles {
-  display: flex;
-  flex-direction: column;
   gap: 6px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.muscle-item {
-  display: flex;
-  font-size: 0.88rem;
-}
-
-.muscle-label {
-  color: var(--text-muted);
-  width: 95px;
-  font-weight: 600;
-}
-
-.muscle-value {
-  color: #ffffff;
-  flex: 1;
-}
-
-.primary-muscle {
-  color: var(--primary-accent);
-  font-weight: 700;
-}
-
-/* 가이드 상세 블록 */
-.guide-card {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.guide-block {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.guide-title {
+  min-height: 52px;
+  padding: 12px 20px;
   font-size: 1rem;
   font-weight: 700;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  border-radius: var(--radius-cta);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn-primary {
+  flex: 1;
+  background-color: var(--primary);
+  color: #FFFFFF;
+}
+.btn-outline {
+  background-color: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-block {
+  width: 100%;
+}
+.btn:disabled,
+.btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn:disabled:active,
+.btn.is-disabled:active {
+  transform: none;
 }
 
-.guide-title .icon {
-  font-size: 1.1rem;
-}
-
-.guide-list {
-  padding-left: 20px;
-  font-size: 0.9rem;
-  color: #d1d5db;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.guide-list.numbered {
-  padding-left: 22px;
-}
-
-/* 주의사항 강조 블록 */
-.alert-block {
-  background-color: var(--danger-bg);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px;
-}
-
-.guide-title.warning {
-  color: #fca5a5;
-}
-
-.warning-list {
-  padding-left: 18px;
-  color: #fecaca;
-}
-
-/* 하단 액션 버튼 바 */
+/* 아래쪽 버튼 줄 */
 .action-footer {
   display: flex;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 7. 에러 배너 알림                                                          */
-/* -------------------------------------------------------------------------- */
-.error-banner {
-  background-color: var(--danger-bg);
-  border: 1px solid var(--danger-color);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  animation: fadeIn 0.3s ease;
-}
-
-.error-icon {
-  font-size: 1.4rem;
-}
-
-.error-text-wrap {
-  flex: 1;
-}
-
-.error-msg-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f87171;
-}
-
-.error-msg-desc {
-  font-size: 0.8rem;
-  color: #fca5a5;
-}
-
-.error-close-btn {
-  background: transparent;
-  border: none;
-  color: #fca5a5;
-  font-size: 1.4rem;
-  cursor: pointer;
-  line-height: 1;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 8. 공통 폼·선택 칩 (routine.html 조건 선택, scan.html 후보 선택에서 사용)     */
-/* -------------------------------------------------------------------------- */
-/* 예전 단일 페이지의 2단계 조건 폼·타임라인(9번), 3단계 휴식 타이머(10번) 스타일은
-   다중 페이지 구조로 바뀌며 쓰지 않게 되어 지웠습니다. 3단계 타이머는 workout.html을 만들 때 새로 작성합니다. */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* 폼 라벨 · 선택 칩 (scan.html 후보, routine.html 조건 시트) */
 .form-label {
-  font-size: 0.9rem;
+  display: block;
+  font-size: 0.92rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-main);
 }
-
+.label-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text-hint);
+}
 .chip-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-
 .chip {
-  padding: 8px 14px;
-  font-size: 0.85rem;
+  padding: 9px 16px;
+  font-size: 0.9rem;
   font-weight: 600;
-  background-color: var(--bg-surface);
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-
-.chip:hover {
-  background-color: var(--bg-surface-elevated);
-  color: #ffffff;
+.chip:active {
+  transform: scale(0.98);
 }
-
 .chip.active {
-  background-color: rgba(34, 197, 94, 0.18);
-  border-color: var(--primary-accent);
-  color: var(--primary-accent);
+  background-color: var(--primary-weak);
+  border-color: var(--primary);
+  color: var(--primary);
   font-weight: 700;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 11. 푸터                                                                   */
-/* -------------------------------------------------------------------------- */
-.app-footer {
-  padding: 20px;
-  text-align: center;
-  border-top: 1px solid var(--border-color);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-/* -------------------------------------------------------------------------- */
-/* 12. 공통 보조 규칙                                                          */
-/* -------------------------------------------------------------------------- */
-/* hidden 속성을 단 요소는 클래스에 display:flex 등이 있어도 반드시 숨깁니다.
-   (브라우저 기본 [hidden]{display:none}은 클래스 규칙보다 약해서 덮어써지기 때문) */
-[hidden] {
-  display: none !important;
-}
-
-/* <a>에 .btn을 붙였을 때 밑줄 없이 버튼처럼 보이게 합니다. */
-a.btn {
-  text-decoration: none;
-}
-
-/* 비활성 버튼: 눌러도 반응이 없다는 것을 흐리게 보여 줍니다. */
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* 헤더 아래 '← 내 헬스장' 같은 뒤로 가기 링크 */
-.back-link {
-  display: inline-block;
-  margin-top: 6px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  text-decoration: none;
-}
-.back-link:hover {
-  color: var(--primary-accent);
-}
-
-/* -------------------------------------------------------------------------- */
-/* 13. 기구 등록 화면 (scan.html)                                              */
-/* -------------------------------------------------------------------------- */
-/* 촬영 안내 문구: 사진은 저장되지 않는다는 점을 눈에 띄게 알립니다. */
-.capture-guide {
-  margin: 12px 0;
-  padding: 10px 14px;
-  font-size: 0.88rem;
+/* 한 줄 입력 (이름 수정, 닉네임) */
+.name-input,
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1rem;
   color: var(--text-main);
-  background-color: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.35);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.name-input {
+  margin: 8px 0 4px;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.name-input:focus,
+.text-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-weak);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. 안내 · 경고 · 오류                                                        */
+/* -------------------------------------------------------------------------- */
+.list-hint {
+  font-size: 0.85rem;
+  color: var(--text-hint);
+}
+
+/* 통증 문구: 항상 표시 */
+.pain-notice {
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--danger);
+  background-color: var(--danger-bg);
   border-radius: var(--radius-sm);
 }
 
-/* 촬영 / 앨범 버튼 두 개를 세로로 꽉 차게 배치 (휴대폰 한 손 터치) */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: var(--danger-bg);
+  border: 1px solid rgba(194, 65, 58, 0.25);
+  border-radius: var(--radius-sm);
+}
+.error-icon {
+  font-size: 1.1rem;
+}
+.error-text-wrap {
+  flex: 1;
+}
+.error-msg-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--danger);
+}
+.error-msg-desc {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+}
+.error-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+/* 로딩 (scan.html) */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 20px;
+  text-align: center;
+}
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--primary-weak);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.loading-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.loading-desc {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. 기구 정보 블록 (scan 결과 카드, 홈·루틴의 펼친 기구 카드 공통)             */
+/* -------------------------------------------------------------------------- */
+.result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guide-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.guide-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.guide-title.warning {
+  color: var(--warning);
+}
+.guide-list {
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.alert-block {
+  padding: 12px 14px;
+  background-color: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}
+.warning-list {
+  color: var(--text-main);
+}
+
+.equipment-name-en {
+  font-size: 0.85rem;
+  color: var(--text-hint);
+}
+.target-muscles {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.muscle-item {
+  display: flex;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+.muscle-label {
+  min-width: 64px;
+  color: var(--text-sub);
+}
+.muscle-value {
+  font-weight: 600;
+}
+.primary-muscle {
+  color: var(--primary);
+}
+.equipment-role {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. 기구 등록 (scan.html)                                                     */
+/* -------------------------------------------------------------------------- */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.capture-guide {
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  color: var(--primary);
+  background-color: var(--primary-weak);
+  border-radius: var(--radius-sm);
+}
+.drop-zone {
+  padding: 26px 18px;
+  text-align: center;
+  background-color: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-card);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.drop-zone.dragover {
+  border-color: var(--primary);
+  background-color: var(--primary-weak);
+}
+.upload-icon-circle {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background-color: var(--primary-weak);
+  border-radius: 50%;
+}
 .capture-buttons {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 14px 0 10px;
+  margin: 16px 0 10px;
 }
 .capture-buttons .btn {
   width: 100%;
 }
+.secondary-text {
+  font-size: 0.8rem;
+  color: var(--text-hint);
+}
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.preview-img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  background-color: var(--bg-app);
+  border-radius: var(--radius-sm);
+}
+.preview-actions {
+  display: flex;
+  gap: 10px;
+}
 
-/* 확신도 낮음 안내 박스 (F1-2) */
+/* 확신도 낮음 (F1-2) */
 .low-confidence-card {
-  border-color: var(--warning-color);
-  margin-bottom: 12px;
+  border-color: var(--warning);
+  background-color: var(--warning-bg);
 }
 .low-confidence-title {
   font-weight: 700;
-  color: var(--warning-color);
+  color: var(--warning);
 }
 .low-confidence-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
   margin: 4px 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-sub);
 }
 
-/* 이름 수정 입력란 (F1-3) */
-.label-hint {
-  font-weight: 400;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-.name-input {
-  width: 100%;
-  margin: 8px 0 4px;
-  padding: 12px 14px;
-  font-size: 1.25rem;
-  font-weight: 800;
-  font-family: inherit;
-  color: var(--text-main);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-}
-.name-input:focus {
-  outline: none;
-  border-color: var(--primary-accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-/* 결과 카드 아래 안전 문구: 항상 표시 */
-.pain-notice {
-  margin: 12px 0;
-  padding: 12px 14px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--danger-color);
-  background-color: var(--danger-bg);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: var(--radius-sm);
-}
-
-/* 저장 완료 화면 */
+/* 저장 완료 */
 .saved-section {
   text-align: center;
 }
 .saved-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary-accent);
+  color: var(--primary);
 }
 .saved-desc {
   margin: 6px 0 14px;
-  color: var(--text-muted);
+  color: var(--text-sub);
 }
 
 /* -------------------------------------------------------------------------- */
-/* 14. 홈 = 내 헬스장 (index.html)                                             */
+/* 8. 홈 = 내 헬스장 (index.html)                                               */
 /* -------------------------------------------------------------------------- */
-/* 상단 행동 버튼: '오늘 운동 시작'을 크게, '기구 추가'를 그 아래에 */
 .home-actions {
   display: flex;
   flex-direction: column;
@@ -722,48 +563,30 @@ a.btn {
 .home-actions .btn {
   width: 100%;
 }
-/* <a> 버튼을 막을 때: disabled 속성이 없어 클래스로 흐리게 표시 (클릭은 home.js에서 막음) */
-.btn.is-disabled {
-  opacity: 0.45;
-  box-shadow: none;
-}
-
-/* 빈 화면 안내 */
 .empty-state {
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   padding: 28px 20px;
+  text-align: center;
 }
 .empty-icon {
-  font-size: 2.4rem;
+  font-size: 2.2rem;
 }
 .empty-state h2 {
   font-size: 1.1rem;
+  font-weight: 700;
 }
 .empty-state p {
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: var(--text-sub);
 }
 .empty-state .btn {
   width: 100%;
   margin-top: 6px;
 }
 
-/* 목록 제목 */
-.section-title {
-  font-size: 1.05rem;
-  margin-bottom: 10px;
-}
-.section-count {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--primary-accent);
-}
-
-/* 기구 목록 */
 .equipment-list {
   list-style: none;
   display: flex;
@@ -771,131 +594,437 @@ a.btn {
   gap: 10px;
 }
 .equipment-item {
-  background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 .equipment-item.open {
-  border-color: var(--primary-accent);
+  border-color: var(--primary);
 }
 .equipment-row {
   display: flex;
   align-items: stretch;
 }
-/* 이름 + 근육 영역 전체가 펼침 버튼 (터치 영역을 넓게) */
 .equipment-toggle {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
   column-gap: 8px;
-  text-align: left;
+  min-height: 60px;
   padding: 14px 16px;
+  text-align: left;
+  color: inherit;
   background: none;
   border: none;
-  color: inherit;
-  font-family: inherit;
   cursor: pointer;
-  min-height: 56px;
 }
 .equipment-name {
-  font-weight: 800;
   font-size: 1rem;
+  font-weight: 700;
 }
 .equipment-muscles {
   grid-row: 2;
   font-size: 0.82rem;
-  color: var(--primary-accent);
+  color: var(--primary);
 }
+/* 펼침 화살표: 글자 대신 CSS 삼각형 (이모지·기호 글꼴 차이 없이 같은 모양) */
 .equipment-chevron {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
-  color: var(--text-muted);
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--text-hint);
+  border-bottom: 2px solid var(--text-hint);
+  transform: rotate(45deg);
   transition: transform 0.2s ease;
 }
-.equipment-item.open .equipment-chevron {
-  transform: rotate(180deg);
+.equipment-item.open .equipment-chevron,
+.exercise-item.open .equipment-chevron {
+  transform: rotate(-135deg);
 }
-/* 삭제 아이콘 버튼 */
 .icon-btn {
   width: 52px;
+  font-size: 1.05rem;
+  color: var(--text-hint);
   background: none;
   border: none;
-  border-left: 1px solid var(--border-color);
-  color: var(--text-muted);
-  font-size: 1.1rem;
+  border-left: 1px solid var(--border);
   cursor: pointer;
 }
 .delete-btn:hover {
-  color: var(--danger-color);
+  color: var(--danger);
   background-color: var(--danger-bg);
 }
-/* 펼친 기구 카드 (F1-5) */
 .equipment-panel {
-  padding: 4px 16px 16px;
-  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border);
 }
 .equipment-panel .equipment-name-en {
+  margin-top: 10px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. 오늘의 운동 (routine.html) — 1.md 작업 6-B                                */
+/* -------------------------------------------------------------------------- */
+/* 본문 맨 아래에 하단 고정 버튼 높이만큼 여백을 줘서 마지막 내용이 가려지지 않게 합니다. */
+.page-routine .routine-main {
+  padding: 4px 20px calc(var(--cta-height) + var(--cta-gap) * 2 + env(safe-area-inset-bottom));
+  gap: 0;
+}
+
+/* ① 상단 바: 앱 배경과 같은 배경, 구분선 없음 */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  height: 56px;
+  padding: 0 8px;
+  background-color: var(--bg-app);
+}
+.top-bar-title {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+}
+.top-bar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text-main);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  text-decoration: none;
+  cursor: pointer;
+}
+.top-bar-action {
+  width: auto;
+  padding: 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary);
+  justify-self: end;
+}
+
+/* ② 날짜 · ③ 인사말 */
+.today-date {
   margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-sub);
 }
-.equipment-role {
-  font-size: 0.9rem;
+.greeting {
+  margin-top: 6px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
-.equipment-panel .pain-notice {
-  margin: 0;
+.greeting-line {
+  display: block;
+}
+.greeting-accent {
+  color: var(--primary);
 }
 
-/* -------------------------------------------------------------------------- */
-/* 15. 오늘의 루틴 (routine.html)                                              */
-/* -------------------------------------------------------------------------- */
-/* 가로로 꽉 찬 버튼 */
-.btn-block {
-  width: 100%;
+/* STEP 공통 */
+.step {
+  margin-top: 32px;
+}
+.step-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+.step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+.step-title {
+  font-size: 20px;
+  font-weight: 500;
+}
+.step-hint {
+  font-size: 13px;
+  color: var(--text-hint);
+  white-space: nowrap;
 }
 
-/* 조건 선택·결과 섹션: 카드 사이 간격 */
-.routine-form,
-.routine-result {
+/* ④ 컨디션 카드: 가로 3등분 */
+.energy-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.energy-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 6px 16px;
+  text-align: center;
+  color: var(--text-main);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.energy-card:active {
+  transform: scale(0.98);
+}
+.energy-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  color: var(--text-sub);
+  background-color: #F0F1EE;
+  border-radius: 50%;
+}
+.energy-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+.energy-desc {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.35;
+}
+/* 선택된 카드: 2px 딥그린 테두리 + 아주 옅은 초록 배경 + 오른쪽 위 체크 배지 */
+.energy-card.is-selected {
+  border: 2px solid var(--primary);
+  padding: 17px 5px 15px; /* 테두리가 1px 두꺼워진 만큼 줄여 크기가 흔들리지 않게 */
+  background-color: rgba(229, 242, 235, 0.55);
+}
+.energy-card.is-selected .energy-icon {
+  color: var(--primary);
+  background-color: var(--primary-weak);
+}
+.energy-check {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: var(--primary);
+  border: 2px solid var(--bg-app);
+  border-radius: 50%;
+}
+.energy-card.is-selected .energy-check {
+  display: flex;
+}
+
+/* AI 추천 배지 (표시용) */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-weak);
+  border-radius: var(--radius-chip);
+  white-space: nowrap;
+}
+
+/* ⑤ 추천 루틴 카드 */
+.routine-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  background-color: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.routine-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.tag-pill {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-weak);
+  border-radius: var(--radius-chip);
+}
+.routine-title {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.routine-desc {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+/* 원칙(principle)이 길면 2줄에서 자르고 말줄임 */
+#routineDesc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.routine-meta {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.meta-dot {
+  margin: 0 6px;
+  color: var(--text-hint);
+}
+
+/* 몸 일러스트: 옅은 초록 원형 글로우 위에 실루엣 */
+.body-figure {
+  flex: 0 0 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  background: radial-gradient(circle at 50% 45%, rgba(95, 174, 138, 0.22) 0%, rgba(95, 174, 138, 0) 68%);
+}
+.body-base,
+.body-part {
+  fill: var(--figure-base);
+  transition: fill 0.2s ease;
+}
+.body-part.is-primary {
+  fill: var(--primary);
+}
+.body-part.is-secondary {
+  fill: var(--primary-mid);
+}
+
+/* 카드 자리 안내 (오류 · 기구 없음 · 조건 고르기 전) */
+.slot-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px;
+  text-align: center;
+  background-color: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.slot-message-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.slot-message-desc {
+  font-size: 14px;
+  color: var(--text-sub);
+}
+.slot-message-btn {
+  margin-top: 8px;
+  min-height: 44px;
+}
+
+/* '선배' 이유 박스 */
+.senior-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+  background-color: var(--note-bg);
+  border-radius: 16px;
+}
+.senior-avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  background-color: var(--surface);
+  border-radius: 50%;
+}
+.senior-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.senior-text {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.55;
+}
+
+/* 로딩 스켈레톤: 카드와 같은 크기, 은은한 shimmer */
+.skeleton {
+  border-radius: var(--radius-card);
+  background: linear-gradient(90deg, #EEEEE8 0%, #F6F6F1 50%, #EEEEE8 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.skeleton-card {
+  height: 214px;
+}
+.skeleton-note {
+  height: 92px;
+  margin-top: 12px;
+  border-radius: 16px;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* 루틴 상세 (하단 버튼으로 펼침) */
+.routine-detail {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 32px;
+  scroll-margin-top: 64px; /* 스크롤해 왔을 때 상단 바에 가리지 않게 */
 }
-
-/* 루틴 전체 원칙: 앱의 차별점이라 가장 눈에 띄게 (초록 테두리 + 큰 글씨) */
-.principle-card {
-  border: 2px solid var(--primary-accent);
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), var(--bg-surface-elevated) 70%);
-}
-.principle-label {
-  font-size: 0.82rem;
+.detail-title {
+  font-size: 20px;
   font-weight: 700;
-  color: var(--primary-accent);
 }
-.principle-text {
-  margin-top: 6px;
-  font-size: 1.15rem;
-  font-weight: 800;
-  line-height: 1.5;
-}
-.routine-meta {
-  margin-top: 8px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
 .warmup-card p {
   margin-top: 6px;
   font-size: 0.92rem;
-}
-
-.list-hint {
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-sub);
 }
 
 /* 순서별 운동 카드 */
@@ -906,40 +1035,38 @@ a.btn {
   gap: 10px;
 }
 .exercise-item {
-  background-color: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 .exercise-item.open {
-  border-color: var(--primary-accent);
+  border-color: var(--primary);
 }
-/* 카드 윗부분 전체가 펼침 버튼 (터치 영역을 넓게) */
 .exercise-toggle {
   width: 100%;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px;
   text-align: left;
+  color: inherit;
   background: none;
   border: none;
-  color: inherit;
-  font-family: inherit;
   cursor: pointer;
 }
-/* 순서 번호 동그라미 */
 .exercise-order {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
   font-weight: 800;
-  color: #000000;
-  background-color: var(--primary-accent);
+  color: #FFFFFF;
+  background-color: var(--primary);
+  border-radius: 50%;
 }
 .exercise-body {
   flex: 1;
@@ -948,42 +1075,281 @@ a.btn {
   gap: 2px;
 }
 .exercise-title {
-  font-weight: 800;
   font-size: 1rem;
+  font-weight: 700;
 }
 .exercise-equipment {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-hint);
 }
 .exercise-dose {
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--primary-accent);
+  color: var(--primary);
 }
-/* 이 순서인 이유: 접혀 있어도 항상 보이는 핵심 문장 */
+/* 이 순서인 이유: 접혀 있어도 항상 보이는 핵심 문장 ('선배' 박스와 같은 베이지) */
 .exercise-why {
   margin-top: 6px;
   padding: 8px 10px;
   font-size: 0.86rem;
   line-height: 1.5;
-  background-color: var(--bg-surface);
-  border-left: 3px solid var(--primary-accent);
-  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  background-color: var(--note-bg);
+  border-radius: 10px;
 }
 .exercise-item .equipment-chevron {
-  margin-top: 4px;
+  flex-shrink: 0;
+  margin-top: 8px;
 }
-.exercise-item.open .equipment-chevron {
-  transform: rotate(180deg);
-}
-/* 펼친 기구 카드 */
 .exercise-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   padding: 4px 16px 16px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
+}
+.exercise-panel .equipment-role {
+  margin-top: 10px;
+}
+
+/* 코치 설명 카드 (/api/coach + coach.md) */
+.coach-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-loading {
+  font-size: 0.88rem;
+  color: var(--primary);
+}
+.coach-error {
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+.coach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background-color: var(--bg-app);
+  border-radius: 16px;
+}
+.coach-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+.coach-headline {
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.coach-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+.coach-section-title {
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+.coach-list,
+.coach-mistakes {
+  padding-left: 18px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.coach-steps {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coach-steps li,
+.coach-mistakes li {
+  display: flex;
+  flex-direction: column;
+}
+.coach-mistakes li {
+  margin-bottom: 4px;
+}
+.coach-cue {
+  font-size: 0.92rem;
+  color: var(--primary);
+}
+.coach-feel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88rem;
+}
+.coach-wrong {
+  color: var(--warning);
+}
+.coach-plan {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.coach-mistake {
+  font-weight: 700;
+}
+.coach-fix {
+  color: var(--text-sub);
+}
+.coach-remember {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-weak);
+  border-radius: 10px;
+}
+
+/* ⑥ 하단 고정 CTA: 앱 폭(최대 480px) 안에 맞춰 화면 아래에 고정 */
+.cta-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 10;
+  width: 100%;
+  max-width: 480px;
+  transform: translateX(-50%);
+  padding: 12px var(--cta-gap) calc(var(--cta-gap) + env(safe-area-inset-bottom));
+  /* 버튼 뒤로 지나가는 내용이 자연스럽게 사라지도록 앱 배경색을 위쪽만 투명하게 */
+  background: linear-gradient(to bottom, rgba(248, 248, 243, 0) 0%, var(--bg-app) 30%);
+  pointer-events: none; /* 투명한 위쪽 영역은 아래 내용을 가리지 않게 */
+}
+.cta-btn {
+  pointer-events: auto;
+  width: 100%;
+  height: var(--cta-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #FFFFFF;
+  background-color: var(--primary);
+  border: none;
+  border-radius: var(--radius-cta);
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.cta-btn:active {
+  transform: scale(0.98);
+}
+.cta-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cta-btn:disabled:active {
+  transform: none;
+}
+@media (min-width: 520px) {
+  /* PC에서는 둥근 앱 컨테이너 아래쪽 여백(24px) 위에 버튼이 오도록 올립니다. */
+  .cta-bar {
+    bottom: 24px;
+    border-radius: 0 0 32px 32px;
+  }
+}
+
+/* 조건 바텀시트 */
+body.sheet-open {
+  overflow: hidden; /* 시트가 열린 동안 뒤 화면 스크롤 잠금 */
+}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background-color: rgba(25, 25, 25, 0.35);
+}
+.bottom-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 21;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  background-color: var(--bg-app);
+  border-radius: 24px 24px 0 0;
+  animation: sheet-up 0.22s ease-out;
+}
+@keyframes sheet-up {
+  from {
+    transform: translate(-50%, 24px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+.sheet-handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  background-color: var(--border);
+  border-radius: 2px;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+.sheet-desc {
+  margin-top: -10px;
+  font-size: 14px;
+  color: var(--text-sub);
+}
+.sheet-group {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.exercise-panel .equipment-role {
-  margin-top: 10px;
+.sheet-apply {
+  margin-top: 4px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. 푸터                                                                    */
+/* -------------------------------------------------------------------------- */
+.app-footer {
+  padding: 18px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-hint);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11. 움직임 줄이기 설정: 애니메이션·전환 끄기                                   */
+/* -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .btn:active,
+  .chip:active,
+  .energy-card:active,
+  .cta-btn:active {
+    transform: none;
+  }
 }

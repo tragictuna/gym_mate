@@ -2,127 +2,214 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <!-- 모바일 뷰포트: 헬스장에서 한 손으로 조작하는 화면 기준 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GymMate - 오늘의 루틴</title>
+  <!-- viewport-fit=cover: 아이폰 하단 홈 바 영역(safe-area)까지 쓰고, 하단 버튼은 env(safe-area-inset-bottom)로 피합니다. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>GymMate - 오늘의 운동</title>
+  <!-- 글꼴: Pretendard (CDN <link>, 빌드 도구 없음) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="page-routine">
   <!--
-    페이지 역할: 오늘의 루틴 (2단계)
-      [조건 선택] 목표·시간·부위 칩만 눌러서 끝(타이핑 없음, F2-1). 경력 선택은 없음(대상이 모두 0~2개월 초보라 사용자 결정으로 뺌) → [로딩] → [결과] principle 강조 → 워밍업 → 순서별 운동 카드
-    - 운동 카드를 누르면 해당 기구 카드(세팅법, 주의사항)가 펼쳐집니다.
-    - 생성된 루틴은 gm_routines에, 고른 조건은 gm_profile에 저장합니다.
+    페이지 역할: 오늘의 운동 (2단계, 작업 6-B 디자인)
+      ① 상단 바(뒤로 가기 · 제목 · 조건) ② 날짜 ③ 인사말
+      ④ STEP 1 컨디션 카드(가볍게/보통/힘차게) ⑤ STEP 2 추천 루틴 카드 + '선배' 이유 박스
+      ⑥ 하단 고정 버튼 → 누르면 루틴 상세(순서별 운동 + 이유 + 기구 카드 + 코치 설명)가 펼쳐집니다.
+    - 목표·시간·부위는 '조건' 바텀시트의 칩으로 고릅니다(F2-1, 타이핑 없음). 닉네임만 선택 입력입니다.
     - 세트 체크·휴식 타이머는 3단계(F3-1)라 이 페이지에 넣지 않습니다.
     AI 결과는 js/routine.js에서 textContent로만 넣습니다.
   -->
   <div class="app-container">
 
-    <header class="app-header">
-      <div class="logo-area">
-        <span class="logo-icon">🏋️‍♂️</span>
-        <h1 class="logo-title">GymMate</h1>
-      </div>
-      <a href="index.html" class="back-link">← 내 헬스장</a>
+    <!-- ① 상단 바: 배경은 앱 배경과 같고 구분선 없음 -->
+    <header class="top-bar">
+      <a href="index.html" class="top-bar-btn top-bar-back" aria-label="내 헬스장으로 돌아가기">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <h1 class="top-bar-title">오늘의 운동</h1>
+      <button type="button" class="top-bar-btn top-bar-action" id="openSheetBtn" aria-haspopup="dialog" aria-controls="conditionSheet">조건</button>
     </header>
 
-    <main class="main-content">
+    <main class="main-content routine-main" id="routineMain">
 
-      <!-- 등록 기구가 없을 때: 루틴은 등록 기구로만 만들기 때문에 먼저 등록하게 안내 -->
-      <section class="card empty-state" id="noEquipment" hidden>
-        <div class="empty-icon">📷</div>
-        <h2>등록한 기구가 없어요</h2>
-        <p>루틴은 내 헬스장에 등록한 기구로만 만들어요.<br>기구를 먼저 등록해 주세요.</p>
-        <a href="scan.html" class="btn btn-primary">기구 등록하러 가기</a>
+      <!-- ② 날짜 / ③ 인사말 (js/routine.js가 채움) -->
+      <p class="today-date" id="todayDate"></p>
+      <h2 class="greeting">
+        <span class="greeting-line" id="greetingLine">오늘도</span>
+        <span class="greeting-line greeting-accent">천천히 잘해봐요.</span>
+      </h2>
+
+      <!-- ④ STEP 1: 컨디션 -->
+      <section class="step" aria-labelledby="step1Title">
+        <p class="step-label">STEP 1</p>
+        <div class="step-head">
+          <h3 class="step-title" id="step1Title">오늘 몸은 어떤가요?</h3>
+          <span class="step-hint">하나만 골라주세요</span>
+        </div>
+        <!-- 라디오 그룹: 화살표 키로 이동·선택, Space/Enter로 선택 (js/routine.js) -->
+        <div class="energy-cards" id="energyGroup" role="radiogroup" aria-labelledby="step1Title">
+          <button type="button" class="energy-card" role="radio" aria-checked="false" data-value="light" tabindex="-1">
+            <span class="energy-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+            <span class="energy-name">가볍게</span>
+            <span class="energy-desc">몸을 깨우고 싶어요</span>
+            <span class="energy-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5l2.6 2.6L11 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <button type="button" class="energy-card" role="radio" aria-checked="false" data-value="normal" tabindex="-1">
+            <span class="energy-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 3a7 7 0 0 0 0 14z" fill="currentColor"/></svg>
+            </span>
+            <span class="energy-name">보통</span>
+            <span class="energy-desc">평소처럼 할래요</span>
+            <span class="energy-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5l2.6 2.6L11 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <button type="button" class="energy-card" role="radio" aria-checked="false" data-value="strong" tabindex="-1">
+            <span class="energy-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="currentColor" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+            <span class="energy-name">힘차게</span>
+            <span class="energy-desc">오늘 컨디션 최고!</span>
+            <span class="energy-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.5l2.6 2.6L11 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+        </div>
       </section>
 
-      <!-- 1. 조건 선택 (F2-1): 칩만 사용, 타이핑 없음 -->
-      <section class="routine-form" id="conditionSection" hidden>
-        <div class="intro-card">
-          <h2>오늘의 루틴</h2>
-          <p id="equipmentSummary">등록한 기구로 루틴을 만들어요.</p>
+      <!-- ⑤ STEP 2: 추천 루틴 -->
+      <section class="step" aria-labelledby="step2Title">
+        <p class="step-label">STEP 2</p>
+        <div class="step-head">
+          <h3 class="step-title" id="step2Title">오늘의 추천 루틴</h3>
+          <!-- 누를 수 없는 표시용 배지 -->
+          <span class="ai-badge">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0.5l1.6 4.9 4.9 1.6-4.9 1.6L7 13.5 5.4 8.6 0.5 7l4.9-1.6z" fill="currentColor"/></svg>
+            AI 추천
+          </span>
         </div>
 
-        <!-- 각 칩 그룹은 data-field로 어떤 조건인지 표시하고, 칩의 data-value가 API로 보낼 값입니다. -->
-        <div class="form-group card">
-          <span class="form-label">🎯 목표</span>
-          <div class="chip-group" data-field="goal" role="radiogroup" aria-label="목표">
-            <button type="button" class="chip" data-value="근육 늘리기">근육 늘리기</button>
-            <button type="button" class="chip" data-value="체력">체력</button>
-            <button type="button" class="chip" data-value="체중 감량">체중 감량</button>
+        <!-- 카드 자리: 루틴 카드 / 스켈레톤 / 오류 / 기구 0개 / 조건 고르기 전 중 하나만 보입니다. -->
+        <div class="routine-slot" id="routineSlot" aria-live="polite">
+
+          <article class="routine-card" id="routineCard" hidden>
+            <div class="routine-card-text">
+              <span class="tag-pill" id="routineTags"></span>
+              <h4 class="routine-title" id="routineTitle"></h4>
+              <p class="routine-desc" id="routineDesc"></p>
+              <p class="routine-desc" id="routineEquip"></p>
+              <p class="routine-meta"><span id="routineMinutes"></span><span class="meta-dot" aria-hidden="true">•</span><span id="routineSets"></span></p>
+            </div>
+            <!-- 몸 일러스트: 부위별 path에 id를 두고, 루틴의 focus_tags에 해당하는 부위만 초록으로 칠합니다. -->
+            <div class="body-figure" aria-hidden="true">
+              <svg viewBox="0 0 100 190" width="96" height="182">
+                <circle class="body-base" cx="50" cy="16" r="11"/>
+                <rect class="body-base" x="45" y="26" width="10" height="8" rx="3"/>
+                <path class="body-part" id="part-shoulders" d="M27 46 Q28 35 40 34 L41 47 Z M73 46 Q72 35 60 34 L59 47 Z"/>
+                <path class="body-part" id="part-chest" d="M41 34 L59 34 L61 58 Q50 62 39 58 Z"/>
+                <path class="body-part" id="part-back" d="M33 49 L39 47 L39 80 L35 82 Z M67 49 L61 47 L61 80 L65 82 Z"/>
+                <path class="body-part" id="part-abs" d="M40 61 Q50 65 60 61 L60 92 L40 92 Z"/>
+                <path class="body-part" id="part-arms" d="M26 49 L32 51 L29 100 L22 99 Z M74 49 L68 51 L71 100 L78 99 Z"/>
+                <path class="body-base" d="M39 94 L61 94 L63 104 L37 104 Z"/>
+                <path class="body-part" id="part-legs" d="M37 106 L49 106 L47 182 L39 182 Z M51 106 L63 106 L61 182 L53 182 Z"/>
+              </svg>
+            </div>
+          </article>
+
+          <div class="skeleton skeleton-card" id="skeletonCard" hidden aria-label="루틴을 만드는 중"></div>
+
+          <div class="slot-message" id="slotMessage" hidden>
+            <p class="slot-message-title" id="slotMessageTitle"></p>
+            <p class="slot-message-desc" id="slotMessageDesc"></p>
+            <button type="button" class="btn btn-outline slot-message-btn" id="slotMessageBtn"></button>
           </div>
         </div>
 
-        <div class="form-group card">
-          <span class="form-label">⏱️ 시간</span>
-          <div class="chip-group" data-field="minutes" role="radiogroup" aria-label="시간">
-            <button type="button" class="chip" data-value="30">30분</button>
-            <button type="button" class="chip" data-value="45">45분</button>
-            <button type="button" class="chip" data-value="60">60분</button>
+        <!-- '선배' 이유 박스 (coach_note) -->
+        <aside class="senior-note" id="seniorNote" hidden>
+          <span class="senior-avatar" aria-hidden="true">선배</span>
+          <div class="senior-body">
+            <p class="senior-title">이렇게 짠 이유가 있어요</p>
+            <p class="senior-text" id="seniorText"></p>
           </div>
-        </div>
-
-        <div class="form-group card">
-          <span class="form-label">💪 부위 <span class="label-hint">(괄호 안은 그 부위에 쓸 수 있는 내 기구 수)</span></span>
-          <!-- 부위 칩은 등록 기구의 target_muscles를 보고 js/routine.js가 만듭니다. -->
-          <div class="chip-group" data-field="body_part" id="bodyPartChips" role="radiogroup" aria-label="부위"></div>
-        </div>
-
-        <button type="button" class="btn btn-primary btn-block" id="generateBtn">✨ 루틴 만들기</button>
+        </aside>
+        <div class="skeleton skeleton-note" id="skeletonNote" hidden></div>
       </section>
 
-      <!-- 2. 생성 중 로딩 -->
-      <section class="loading-section" id="loadingSection" hidden>
-        <div class="spinner"></div>
-        <p class="loading-title">내 기구로 루틴을 짜는 중이에요...</p>
-        <p class="loading-desc">보통 10초 안팎, 무료 AI가 붐비면 1~2분 걸릴 수 있어요.</p>
-      </section>
-
-      <!-- 3. 결과 -->
-      <section class="routine-result" id="resultSection" hidden>
-
-        <!-- 루틴 전체 원칙: 앱의 차별점이므로 맨 위에 크게 강조합니다. -->
-        <div class="card principle-card">
-          <p class="principle-label">💡 오늘 루틴의 원칙</p>
-          <p class="principle-text" id="principleText"></p>
-          <p class="routine-meta" id="routineMeta"></p>
-        </div>
+      <!-- 루틴 상세: 하단 버튼을 누르면 펼쳐집니다. (기존 기능: 순서별 운동 + 이유 + 기구 카드 + 코치 설명 + 다시 만들기) -->
+      <section class="routine-detail" id="detailSection" hidden aria-labelledby="detailTitle">
+        <h3 class="detail-title" id="detailTitle">순서대로 해 볼게요</h3>
 
         <div class="card warmup-card">
-          <h3 class="guide-title"><span class="icon">🔥</span> 워밍업</h3>
+          <h4 class="guide-title">워밍업</h4>
           <p id="warmupText"></p>
         </div>
 
         <p class="list-hint">운동을 누르면 기구 세팅법과 주의사항이 보여요.</p>
-        <ol class="exercise-list" id="exerciseList">
-          <!-- js/routine.js에서 순서별 운동 카드 생성 -->
-        </ol>
+        <ol class="exercise-list" id="exerciseList"></ol>
 
         <!-- 안전 문구: 항상 표시 -->
-        <p class="pain-notice">🛑 통증이 있으면 멈추세요</p>
+        <p class="pain-notice">통증이 있으면 멈추세요</p>
 
-        <div class="action-footer">
-          <button type="button" class="btn btn-outline" id="changeConditionBtn">⚙️ 조건 바꾸기</button>
-          <button type="button" class="btn btn-primary" id="regenerateBtn">🔄 다시 만들기</button>
-        </div>
+        <button type="button" class="btn btn-outline btn-block" id="regenerateBtn">같은 조건으로 다시 만들기</button>
       </section>
 
-      <!-- 오류 알림 -->
+      <!-- 오류 알림 (저장 실패 등 카드 밖 안내용) -->
       <div class="error-banner" id="errorBanner" hidden>
-        <span class="error-icon">⚠️</span>
         <div class="error-text-wrap">
           <p class="error-msg-title" id="errorTitle"></p>
           <p class="error-msg-desc" id="errorDesc"></p>
         </div>
         <button type="button" class="error-close-btn" id="errorCloseBtn" aria-label="닫기">&times;</button>
       </div>
-
     </main>
 
-    <footer class="app-footer">
-      <p>© 2026 GymMate</p>
-    </footer>
+    <!-- ⑥ 하단 고정 버튼 -->
+    <div class="cta-bar">
+      <button type="button" class="cta-btn" id="startBtn" disabled>
+        추천 루틴으로 시작하기
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4.5l5.5 5.5L8 15.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
+
+  <!-- 조건 바텀시트: 목표 · 시간 · 부위 칩(F2-1) + 닉네임(선택) -->
+  <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+  <section class="bottom-sheet" id="conditionSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 class="sheet-title" id="sheetTitle">오늘 조건</h2>
+      <button type="button" class="top-bar-btn" id="closeSheetBtn" aria-label="닫기">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 6l10 10M16 6L6 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="sheet-desc" id="sheetDesc">고른 조건은 다음에도 그대로 쓸게요.</p>
+
+    <!-- 칩 그룹은 data-field로 어떤 조건인지 표시하고, 칩의 data-value가 API로 보낼 값입니다. -->
+    <div class="sheet-group">
+      <span class="form-label" id="goalLabel">목표</span>
+      <div class="chip-group" data-field="goal" role="radiogroup" aria-labelledby="goalLabel">
+        <button type="button" class="chip" data-value="근육 늘리기">근육 늘리기</button>
+        <button type="button" class="chip" data-value="체력">체력</button>
+        <button type="button" class="chip" data-value="체중 감량">체중 감량</button>
+      </div>
+    </div>
+    <div class="sheet-group">
+      <span class="form-label" id="minutesLabel">시간</span>
+      <div class="chip-group" data-field="minutes" role="radiogroup" aria-labelledby="minutesLabel">
+        <button type="button" class="chip" data-value="30">30분</button>
+        <button type="button" class="chip" data-value="45">45분</button>
+        <button type="button" class="chip" data-value="60">60분</button>
+      </div>
+    </div>
+    <div class="sheet-group">
+      <span class="form-label" id="bodyLabel">부위 <span class="label-hint">(괄호 안은 쓸 수 있는 내 기구 수)</span></span>
+      <div class="chip-group" data-field="body_part" id="bodyPartChips" role="radiogroup" aria-labelledby="bodyLabel"></div>
+    </div>
+    <div class="sheet-group">
+      <label class="form-label" for="nicknameInput">닉네임 <span class="label-hint">(선택, 인사말에 써요)</span></label>
+      <input type="text" id="nicknameInput" class="text-input" maxlength="12" autocomplete="nickname" placeholder="예: 헬린이">
+    </div>
+    <button type="button" class="cta-btn sheet-apply" id="applySheetBtn">이 조건으로 추천받기</button>
+  </section>
 
   <script src="js/storage.js"></script>
   <script src="js/routine.js"></script>

@@ -2,16 +2,20 @@
  * ==============================================================================
  * 파일명: api/routine.js
  * 역할: 사용자가 고른 조건과 '내 헬스장'에 등록한 기구 목록으로 오늘의 루틴을 만드는 Vercel 서버리스 함수 (PRD 7장)
- * 모델: process.env.OPENROUTER_MODEL (없으면 "google/gemma-4-26b-a4b-it:free")
- *       실패하면 ROUTINE_FREE_FALLBACKS(무료 모델)로 순서대로 넘어갑니다. 유료 모델은 쓰지 않습니다.
+ * 모델: 1단계 Google Gemini API 직접 호출(gemini-3-flash-preview → 3.1-flash-lite → 3.5-flash-lite, GEMINI_API_KEY),
+ *       실패하면 2단계 OpenRouter ROUTINE_FREE_MODELS(무료). 단계 전환과 HTTP 오류 처리는 api/_lib/ai.js가 맡습니다. 유료 크레딧은 쓰지 않습니다.
  *
  * 요청: POST /api/routine
  *   {
- *     conditions: { goal: "근육 늘리기"|"체력"|"체중 감량", minutes: 30|45|60, body_part: string },
+ *     conditions: { goal: "근육 늘리기"|"체력"|"체중 감량", minutes: 30|45|60, body_part: string,
+ *                   energy?: "light"|"normal"|"strong" },   // 오늘 컨디션 (작업 6-B, 없으면 normal)
  *     (경력은 받지 않습니다. 대상이 모두 헬스 0~2개월 초보라 시스템 프롬프트에 고정했습니다. 예전 클라이언트가 보내도 무시합니다.)
  *     equipment:  [ { id: "eq_...", name_ko: string, target_muscles: string[] }, ... ]   // 1개 이상
  *   }
  * 응답(성공): { success: true, data: {
+ *     title: string,              // 루틴 이름 (12자 안팎, 예: "전신 기초 다지기")            ← 작업 6-B 추가
+ *     focus_tags: string[],       // 부위 태그 1~2개 (예: ["등", "하체"])                    ← 작업 6-B 추가
+ *     coach_note: string,         // '선배' 박스 본문: 오늘 조건에 맞춰 이렇게 짠 이유(2문장 이내) ← 작업 6-B 추가
  *     principle: string,          // 루틴 전체 원칙 한 줄 (앱의 차별점: "왜 이 순서인가")
  *     total_minutes: number,
  *     warmup: string,             // 등록 기구나 맨몸으로 하는 짧은 워밍업
@@ -31,9 +35,19 @@
  * ==============================================================================
  */
 
+import { buildModelStages, callAI, hasAnyAIKey, NO_KEY_MESSAGE } from "./_lib/ai.js";
+
 // 허용 조건 값 (routine.html의 칩 값과 같아야 합니다)
 const ALLOWED_GOALS = ["근육 늘리기", "체력", "체중 감량"];
 const ALLOWED_MINUTES = [30, 45, 60];
+// 오늘 컨디션 (routine.html의 STEP 1 카드: 가볍게 / 보통 / 힘차게)
+const ALLOWED_ENERGY = ["light", "normal", "strong"];
+// 프롬프트에 넣을 컨디션 설명
+const ENERGY_LABELS = {
+  light: "가볍게 (몸을 깨우고 싶어요)",
+  normal: "보통 (평소처럼)",
+  strong: "힘차게 (컨디션 최고)"
+};
 
 // 기구 목록 최대 개수. 프롬프트가 지나치게 길어지는 것을 막습니다(헬스장 기구를 다 등록해도 보통 이보다 적음).
 const MAX_EQUIPMENT = 40;
@@ -41,19 +55,17 @@ const MAX_EQUIPMENT = 40;
 // 시간별 최소 운동 수. 걸러낸 뒤 이보다 적으면 다시 생성합니다. (등록 기구가 더 적으면 그 수까지만 요구)
 const MIN_EXERCISES_BY_MINUTES = { 30: 3, 45: 4, 60: 5 };
 
-// 주 모델이 실패했을 때 넘어갈 무료 모델 목록. 루틴은 글만 주고받으므로 이미지를 못 읽는 모델도 쓸 수 있습니다.
+// 2단계(무료) 모델 목록. 1단계(Google Gemini 직접 호출)가 실패했을 때만 씁니다. 루틴은 글만 주고받으므로 이미지를 못 읽는 모델도 쓸 수 있습니다.
 // - 무작위 라우터 openrouter/free는 품질을 예측할 수 없어 쓰지 않습니다.
 // - 유료 모델은 크레딧 차감을 막기 위해 넣지 않습니다(사용자 결정).
 // - 순서는 2026-11-19 실측 결과로 정했습니다: ernie-5.5-flash 약 10초·등록 기구 5/5·이유 자연스러움,
 //   dots-3-note 약 110초(느리지만 정확해 마지막 대비용). gemma-4-31b는 주 모델과 같은 공유 한도에 막혀(429) 뺐습니다.
-// - OpenRouter는 models 배열을 최대 3개까지만 받으므로(4개면 HTTP 400) 주 모델 + 2개로 맞춥니다.
-const ROUTINE_FREE_FALLBACKS = [
+// - OpenRouter는 models 배열을 최대 3개까지만 받습니다(4개면 HTTP 400).
+const ROUTINE_FREE_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
   "baidu/ernie-5.5-flash-preview:free",
   "dots-studio/dots-3-note-preview:free"
 ];
-
-// OpenRouter models 배열 최대 길이 (넘으면 400 "models array must have 3 items or fewer")
-const MAX_MODELS = 3;
 
 // 응답 최대 토큰. 무료 모델 대부분이 먼저 '생각'을 하므로, JSON 답(약 1000토큰)에 생각할 몫을 넉넉히 더합니다. 무료라 비용 없음.
 const MAX_TOKENS = 8000;
@@ -150,9 +162,15 @@ function validateRequestBody(body) {
     return { ok: false, error: "기구 목록에 id와 name_ko가 있는 항목이 없습니다." };
   }
 
+  // 컨디션은 선택 값입니다. 보내지 않은 예전 클라이언트도 동작하도록 없으면 "normal"로 봅니다.
+  const energy = c.energy === undefined || c.energy === null || c.energy === "" ? "normal" : c.energy;
+  if (!ALLOWED_ENERGY.includes(energy)) {
+    return { ok: false, error: `energy는 ${ALLOWED_ENERGY.join(", ")} 중 하나여야 합니다.` };
+  }
+
   return {
     ok: true,
-    conditions: { goal: c.goal, minutes, body_part: bodyPart },
+    conditions: { goal: c.goal, minutes, body_part: bodyPart, energy },
     equipment
   };
 }
@@ -170,6 +188,11 @@ function validateRoutine(data) {
   const isText = (v) => typeof v === "string" && v.trim() !== "";
   const isPositive = (v) => Number.isFinite(Number(v)) && Number(v) > 0;
 
+  if (!isText(data.title)) errors.push("title(루틴 이름, 12자 안팎)이 없습니다.");
+  if (!Array.isArray(data.focus_tags) || data.focus_tags.filter(isText).length === 0) {
+    errors.push("focus_tags는 부위 이름 1~2개의 배열이어야 합니다.");
+  }
+  if (!isText(data.coach_note)) errors.push("coach_note(오늘 조건에 맞춰 이렇게 짠 이유, 2문장 이내)가 없습니다.");
   if (!isText(data.principle)) errors.push("principle(루틴 전체 원칙 한 줄)이 없습니다.");
   if (!isText(data.warmup)) errors.push("warmup(워밍업 설명 문자열)이 없습니다.");
   if (!isPositive(data.total_minutes)) errors.push("total_minutes는 양수여야 합니다.");
@@ -218,7 +241,7 @@ function filterExercises(exercises, allowedIds) {
  * @param {Object} data - 형식 검사를 통과한 AI 응답
  * @param {Array} kept - 걸러내고 남은 운동
  * @param {number} minutes - 요청한 운동 시간 (AI 값이 이상할 때 대신 씀)
- * @returns {Object} { principle, total_minutes, warmup, exercises }
+ * @returns {Object} { title, focus_tags, coach_note, principle, total_minutes, warmup, exercises }
  */
 function normalizeRoutine(data, kept, minutes) {
   const exercises = kept
@@ -234,7 +257,13 @@ function normalizeRoutine(data, kept, minutes) {
       why_this_order: String(ex.why_this_order).trim()
     }));
   const total = Math.round(Number(data.total_minutes));
+  // 부위 태그: 공백 제거, 중복 제거, 최대 2개 (화면의 알약 태그가 넘치지 않게)
+  const tags = data.focus_tags.map((t) => String(t).trim()).filter(Boolean);
+  const focusTags = tags.filter((t, i) => tags.indexOf(t) === i).slice(0, 2);
   return {
+    title: data.title.trim(),
+    focus_tags: focusTags,
+    coach_note: data.coach_note.trim(),
     principle: data.principle.trim(),
     // AI가 요청 시간과 크게 다른 값을 내면 화면에 엉뚱한 시간이 보이므로 요청 시간을 씁니다.
     total_minutes: Math.abs(total - minutes) <= 10 ? total : minutes,
@@ -281,11 +310,15 @@ const SYSTEM_PROMPT = `너는 헬스 0~2개월 차 초보자에게 오늘의 루
 5. warmup은 등록 기구나 맨몸으로 하는 5분 안팎의 짧은 워밍업을 한 문자열로 쓴다.
 6. 운동 시간(분)에 맞게 운동 수, 세트, 휴식을 정한다. 대략 30분은 3~4개, 45분은 4~5개, 60분은 5~6개.
 7. 초보자 기준으로 세트는 2~4, 휴식은 45~120초 안에서 정한다. 자세 교정은 하지 않는다.
-8. 반드시 JSON 객체 하나만 출력한다. 인사말, 설명, 마크다운 코드블록은 쓰지 않는다.`;
+8. 오늘 컨디션을 반영한다. light(가볍게)는 세트 수를 줄이고 가벼운 무게와 긴 휴식으로, strong(힘차게)은 세트를 조금 늘린다.
+   사용자는 모두 헬스 0~2개월 초보이므로 strong이어도 무리하지 않는다.
+9. title은 루틴 이름을 12자 안팎으로 쓴다. focus_tags는 오늘 주로 쓰는 부위 1~2개(예: 가슴, 등, 어깨, 팔, 코어, 하체, 전신)로 쓴다.
+10. coach_note는 친한 선배가 말하듯 해요체 2문장 이내로, 오늘 조건(목표·시간·컨디션)에 맞춰 이렇게 짠 이유를 쓴다.
+11. 반드시 JSON 객체 하나만 출력한다. 인사말, 설명, 마크다운 코드블록은 쓰지 않는다.`;
 
 /**
  * 사용자 프롬프트를 만듭니다.
- * @param {Object} conditions - { goal, minutes, body_part }
+ * @param {Object} conditions - { goal, minutes, body_part, energy }
  * @param {Array} equipment - 정리된 기구 목록
  * @param {string[]} bannedIds - 지난 응답에서 목록에 없어서 걸러진 id (금지 목록, 서버 검사 2)
  * @param {string[]} previousErrors - 지난 응답의 형식 문제 (서버 검사 3)
@@ -301,12 +334,16 @@ function buildUserPrompt(conditions, equipment, bannedIds, previousErrors) {
 - 목표: ${conditions.goal}
 - 운동 시간: ${conditions.minutes}분
 - 운동 부위: ${conditions.body_part}
+- 오늘 컨디션: ${conditions.energy} = ${ENERGY_LABELS[conditions.energy]}
 
 [내 헬스장 기구 목록 — 이 목록의 기구만 쓴다]
 ${list}
 
 아래 형식의 JSON 하나로만 답해. <> 안은 설명이니 실제 값으로 바꿔 써.
 {
+  "title": "<루틴 이름 12자 안팎>",
+  "focus_tags": ["<주 부위>", "<보조 부위(없으면 생략)>"],
+  "coach_note": "<오늘 조건에 맞춰 이렇게 짠 이유, 해요체 2문장 이내>",
   "principle": "<루틴 전체 원칙 한 줄>",
   "total_minutes": ${conditions.minutes},
   "warmup": "<등록 기구나 맨몸으로 하는 짧은 워밍업>",
@@ -326,23 +363,16 @@ ${list}
 
 /**
  * OpenRouter에 루틴 생성을 한 번 요청합니다.
- * @param {Object} params - { apiKey, modelName, referer, userPrompt }
+ * @param {Object} params - { referer, userPrompt }
  * @returns {Promise<{ok: true, content: string} | {ok: false, status: number, error: string}>}
- * - 예외 처리: HTTP 오류는 다시 해도 같을 가능성이 높아(키 오류, 한도 초과) 재시도하지 않고 돌려줍니다.
+ * - 모델 단계(Gemini 직접 → OpenRouter 무료)와 HTTP 오류 처리는 api/_lib/ai.js의 callAI가 맡습니다.
  */
-async function requestRoutine({ apiKey, modelName, referer, userPrompt }) {
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey.trim()}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": referer,
-      "X-Title": "GymMate"
-    },
-    body: JSON.stringify({
-      model: modelName,
-      // 주 모델이 실패하면 무료 모델로 순서대로 넘어갑니다. 주 모델과 같은 이름은 한 번만 넣고, 최대 3개로 자릅니다.
-      models: [modelName].concat(ROUTINE_FREE_FALLBACKS.filter((m) => m !== modelName)).slice(0, MAX_MODELS),
+async function requestRoutine({ referer, userPrompt }) {
+  return callAI({
+    referer,
+    label: "루틴",
+    stages: buildModelStages(ROUTINE_FREE_MODELS),
+    payload: {
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userPrompt }
@@ -352,29 +382,8 @@ async function requestRoutine({ apiKey, modelName, referer, userPrompt }) {
       max_tokens: MAX_TOKENS,
       // 생각하는 양을 줄여 응답 시간을 아낍니다. 지원하지 않는 모델은 무시합니다.
       reasoning: { effort: "low" }
-    })
+    }
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[OpenRouter Routine Error]:", response.status, errorText);
-    if (response.status === 429) {
-      return { ok: false, status: 429, error: "무료 AI가 지금 붐벼요. 1~2분 뒤에 다시 시도해 주세요." };
-    }
-    let message = errorText;
-    try {
-      message = JSON.parse(errorText).error?.message || errorText;
-    } catch (e) {
-      // JSON이 아닌 일반 텍스트 오류면 원문을 그대로 씁니다.
-    }
-    return { ok: false, status: response.status, error: `AI 서버 요청 실패 (${response.status}): ${message}` };
-  }
-
-  const data = await response.json();
-  const choice = data.choices?.[0];
-  // 실제로 답한 모델과 잘림 여부(length)를 남겨 문제를 추적하기 쉽게 합니다.
-  console.log(`[루틴 응답] 실제 모델: ${data.model}, finish_reason: ${choice?.finish_reason}`);
-  return { ok: true, content: choice?.message?.content || "" };
 }
 
 /**
@@ -407,14 +416,10 @@ export default async function handler(req, res) {
     }
     const { conditions, equipment } = check;
 
-    // 2) 키·모델 확인
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    const modelName = process.env.OPENROUTER_MODEL || "google/gemma-4-26b-a4b-it:free";
-    if (!apiKey || apiKey.trim() === "" || apiKey === "your_openrouter_api_key_here") {
-      return res.status(500).json({
-        success: false,
-        error: "서버에 OPENROUTER_API_KEY 환경 변수가 설정되지 않았습니다. .env.local 파일을 확인해 주세요."
-      });
+    // 2) 키 확인 (모델은 api/_lib/ai.js의 단계 설정을 씁니다)
+    // AI 키(GEMINI_API_KEY 또는 OPENROUTER_API_KEY)가 하나도 없으면 부를 모델이 없으므로 바로 알려 줍니다.
+    if (!hasAnyAIKey()) {
+      return res.status(500).json({ success: false, error: NO_KEY_MESSAGE });
     }
 
     // 3) 생성 → 파싱 → 형식 검사 → 기구 필터. 실패하면 1회만 다시 생성합니다(총 최대 2번).
@@ -429,8 +434,6 @@ export default async function handler(req, res) {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       console.log(`[루틴 생성 ${attempt}/${MAX_ATTEMPTS}회차] ${conditions.minutes}분, 기구 ${equipment.length}개`);
       const result = await requestRoutine({
-        apiKey,
-        modelName,
         referer,
         userPrompt: buildUserPrompt(conditions, equipment, [...bannedIds], previousErrors)
       });

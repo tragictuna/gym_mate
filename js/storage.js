@@ -8,10 +8,13 @@
  * 관리하는 키 (PRD: 서버 DB 없이 브라우저 LocalStorage만 사용)
  *   - gm_equipment : 등록 기구 배열
  *       { id, name_ko, name_en, target_muscles[], role, setup[], cautions[], created_at }
- *   - gm_profile   : 마지막으로 고른 조건 객체 { goal, default_minutes }
+ *   - gm_profile   : 마지막으로 고른 조건 객체 { goal, default_minutes, nickname?, body_part? }
  *                    (PRD의 experience는 대상이 모두 0~2개월 초보라 사용자 결정으로 뺐습니다)
+ *                    nickname: 인사말용 선택 필드(작업 6-B), body_part: 마지막 부위(같은 조건 루틴 재사용용, 작업 6-B)
  *   - gm_routines  : 생성된 루틴 배열
- *       { id, date, conditions, principle, warmup, exercises }
+ *       { id, date, conditions, principle, warmup, exercises,
+ *         title?, focus_tags?, coach_note?, total_minutes? }   ← ?는 작업 6-B 화면용 선택 필드
+ *       conditions = { goal, minutes, body_part, energy }, exercises[].coach = 코치 설명(선택)
  *   - gm_logs      : 3단계에서 추가 예정 (이번 작업에서는 다루지 않음)
  *
  * 예외 처리 원칙
@@ -284,11 +287,14 @@
   /* ------------------------------------------------------------------------ */
 
   // 프로필에 저장을 허용하는 필드. 다른 값이 섞여 저장되지 않도록 걸러냅니다.
-  const PROFILE_FIELDS = ["goal", "default_minutes"];
+  const PROFILE_FIELDS = ["goal", "default_minutes", "nickname", "body_part"];
+
+  // 닉네임 최대 길이 (인사말 한 줄에 들어가도록)
+  const NICKNAME_MAX = 12;
 
   /**
    * 프로필을 읽습니다.
-   * @returns {{goal:?string, default_minutes:?number}|null} 저장된 프로필, 없으면 null
+   * @returns {{goal:?string, default_minutes:?number, nickname:?string, body_part:?string}|null} 저장된 프로필, 없으면 null
    * - 예외 처리: 객체가 아닌 값(배열, 숫자 등)이 들어 있으면 깨진 것으로 보고 null을 돌려줍니다.
    */
   function getProfile() {
@@ -299,7 +305,8 @@
 
   /**
    * 프로필을 저장합니다. 넘긴 필드만 바꾸고 나머지는 기존 값을 유지합니다(병합).
-   * @param {{goal?:string, default_minutes?:number}} partial - 바꿀 필드
+   * @param {{goal?:string, default_minutes?:number, nickname?:string, body_part?:string}} partial - 바꿀 필드
+   * - nickname은 앞뒤 공백을 지우고 12자로 자릅니다. 빈 문자열이면 null(닉네임 없음)로 저장합니다.
    * @returns {Object|null} 저장된 전체 프로필, 실패하면 null
    */
   function setProfile(partial) {
@@ -311,7 +318,13 @@
     });
     PROFILE_FIELDS.forEach((field) => {
       if (partial && partial[field] !== undefined) {
-        next[field] = field === "default_minutes" ? Number(partial[field]) || null : partial[field];
+        if (field === "default_minutes") {
+          next[field] = Number(partial[field]) || null;
+        } else if (field === "nickname") {
+          next[field] = String(partial[field] || "").trim().slice(0, NICKNAME_MAX) || null;
+        } else {
+          next[field] = partial[field];
+        }
       }
     });
     return writeJSON(KEYS.profile, next) ? next : null;
@@ -360,7 +373,9 @@
 
   /**
    * 루틴 하나를 추가합니다. id("rt_...")와 date(ISO 시각)는 자동으로 채웁니다.
-   * @param {{conditions:Object, principle:string, warmup:string, exercises:Array}} data - 루틴 내용
+   * @param {{conditions:Object, principle:string, warmup:string, exercises:Array,
+   *          title?:string, focus_tags?:string[], coach_note?:string, total_minutes?:number}} data - 루틴 내용
+   *   (title·focus_tags·coach_note·total_minutes는 작업 6-B '오늘의 운동' 카드를 다시 그릴 때 씁니다)
    * @returns {Object|null} 저장된 루틴 객체, 실패하면 null
    * - 예외 처리: exercises가 배열이 아니면 빈 배열로 바꿔, 화면에서 반복문이 터지지 않게 합니다.
    */
@@ -372,10 +387,33 @@
       conditions: (data && data.conditions) || {},
       principle: String((data && data.principle) || ""),
       warmup: String((data && data.warmup) || ""),
-      exercises: Array.isArray(data && data.exercises) ? data.exercises : []
+      exercises: Array.isArray(data && data.exercises) ? data.exercises : [],
+      title: String((data && data.title) || ""),
+      focus_tags: Array.isArray(data && data.focus_tags) ? data.focus_tags.map(String) : [],
+      coach_note: String((data && data.coach_note) || ""),
+      total_minutes: Number(data && data.total_minutes) || null
     };
     list.push(item);
     return writeJSON(KEYS.routines, list) ? item : null;
+  }
+
+  /**
+   * 저장된 루틴의 운동 하나에 코치 설명(/api/coach 결과)을 붙여 저장합니다.
+   * - 새 LocalStorage 키를 만들지 않고 gm_routines 안의 해당 운동 항목에 coach 필드로 넣습니다.
+   *   (PRD가 정한 키 4개를 늘리지 않기 위해서, 그리고 같은 루틴을 다시 열면 기다리지 않고 바로 보이게 하기 위해서)
+   * @param {string} routineId - 루틴 id ("rt_...")
+   * @param {number} order - 운동 순서 번호
+   * @param {Object} coach - 코치 설명 객체
+   * @returns {boolean} 저장에 성공하면 true, 루틴·운동을 못 찾거나 저장에 실패하면 false
+   */
+  function saveExerciseCoach(routineId, order, coach) {
+    const list = getRoutines();
+    const routine = list.find((r) => r && r.id === routineId);
+    if (!routine || !Array.isArray(routine.exercises)) return false;
+    const exercise = routine.exercises.find((ex) => ex && Number(ex.order) === Number(order));
+    if (!exercise) return false;
+    exercise.coach = coach;
+    return writeJSON(KEYS.routines, list);
   }
 
   /**
@@ -407,6 +445,7 @@
     getRoutines,
     setRoutines,
     addRoutine,
+    saveExerciseCoach,
     removeRoutine
   });
 })(window);

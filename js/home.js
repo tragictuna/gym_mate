@@ -127,7 +127,10 @@
     toggle.appendChild(el("span", "equipment-name", item.name_ko || "이름 없는 기구"));
     const muscles = Array.isArray(item.target_muscles) ? item.target_muscles.join(", ") : "";
     toggle.appendChild(el("span", "equipment-muscles", muscles || "타겟 근육 정보 없음"));
-    toggle.appendChild(el("span", "equipment-chevron", "▾"));
+    // 펼침 화살표는 CSS로 그립니다(글자 기호는 글꼴마다 모양이 달라서). 화면 낭독기에는 읽히지 않게 숨깁니다.
+    const chevron = el("span", "equipment-chevron");
+    chevron.setAttribute("aria-hidden", "true");
+    toggle.appendChild(chevron);
     toggle.addEventListener("click", () => toggleItem(item.id));
 
     const del = el("button", "icon-btn delete-btn", "🗑");

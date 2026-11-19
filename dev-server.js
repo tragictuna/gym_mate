@@ -56,8 +56,10 @@ const server = http.createServer(async (req, res) => {
   if (pathname.startsWith("/api/")) {
     const apiName = pathname.replace("/api/", "").replace(/\/$/, "");
     const apiFilePath = path.join(__dirname, "api", `${apiName}.js`);
+    // '_'로 시작하는 경로(예: api/_lib/ai.js)는 공통 모듈이라 API로 열지 않습니다. (Vercel과 같은 규칙)
+    const isPrivateModule = apiName.split("/").some((part) => part.startsWith("_"));
 
-    if (fs.existsSync(apiFilePath)) {
+    if (!isPrivateModule && fs.existsSync(apiFilePath)) {
       try {
         // 동적 모듈 임포트 (Vercel 핸들러 호출)
         const apiModule = await import(`file://${apiFilePath}?t=${Date.now()}`);
@@ -139,6 +141,7 @@ server.listen(PORT, () => {
   - 로컬 주소: http://localhost:${PORT}
   - 기구 인식 API: http://localhost:${PORT}/api/recognize
   - 루틴 생성 API: http://localhost:${PORT}/api/routine
+  - 코치 설명 API: http://localhost:${PORT}/api/coach
 ======================================================
   `);
 });

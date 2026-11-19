@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/coach.js": {
+      "includeFiles": "coach.md"
+    }
+  }
+}

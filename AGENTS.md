@@ -22,12 +22,20 @@
 - **백엔드 (API):** Vercel 서버리스 함수(`api/*.js`, Node.js CommonJS 또는 ES Module 환경)만 사용합니다.
 - 패키지 의존성(npm dependencies)은 서버리스 함수에 필요한 최소한(예: node-fetch 등 필요 시)으로 제한하며, 프론트엔드 번들러는 일체 두지 않습니다.
 
-### 📌 규칙 2. OpenRouter API 호출 및 보안 규칙
-- **호출 위치:** OpenRouter API 호출은 반드시 **`api/` 폴더 안의 서버리스 함수**에서만 수행합니다. 클라이언트 브라우저(`js/*.js`)에서 직접 OpenRouter로 요청을 보내는 것은 보안상 엄격히 금지됩니다.
+### 📌 규칙 2. AI API 호출 및 보안 규칙
+- **호출 위치:** AI API(Google Gemini, OpenRouter) 호출은 반드시 **`api/` 폴더 안의 서버리스 함수**에서만 수행합니다. 클라이언트 브라우저(`js/*.js`)에서 직접 AI 서비스로 요청을 보내는 것은 키가 노출되므로 엄격히 금지됩니다.
+- **모델 단계** (`api/_lib/ai.js`, 2026-11-19 사용자 결정 — 돈을 쓰지 않고 품질·속도 개선. PRD·1.md의 'OpenRouter만 사용'과 다른 부분):
+  1. **Google Gemini 직접 호출:** `gemini-3-flash-preview` → `gemini-3.1-flash-lite` → `gemini-3.5-flash-lite` (Google의 OpenAI 호환 주소, 모델당 최대 40초)
+     - 2.5 계열은 새 사용자에게 막혔고(404), 3.5-flash·3.7/3.8-flash는 붐벼서(503·무응답) 제외했습니다(2026-11-19 실측).
+     - 쓰고 있는 OpenRouter 계정이 본인 것이 아니라 Google 키를 OpenRouter에 연결(BYOK)할 수 없어서 직접 호출로 정했습니다.
+  2. **OpenRouter 무료:** 1단계가 실패(키 없음, 무료 한도 429 등)하면 각 API의 `:free` 모델 목록으로 넘어갑니다.
+  - 유료 크레딧은 쓰지 않습니다(OpenRouter 크레딧 0원 확인).
+  - OpenRouter `models` 배열은 최대 3개입니다(넘으면 HTTP 400).
 - **환경 변수 사양:**
-  - API Key: `process.env.OPENROUTER_API_KEY`
-  - 모델명: `process.env.OPENROUTER_MODEL` (환경변수 미설정 시 기본값: `"google/gemma-4-26b-a4b-it:free"`)
-- **API 헤더:** OpenRouter 권장 표준 헤더(`Authorization: Bearer ...`, `HTTP-Referer`, `X-Title: GymMate`)를 필수로 포함합니다.
+  - `GEMINI_API_KEY`: 내 Google AI Studio 키 (있으면 1단계 사용) / `GEMINI_MODEL`: 1단계 첫 모델 변경(선택)
+  - `OPENROUTER_API_KEY`: 2단계에 필요 / `OPENROUTER_MODEL`: 2단계 첫 모델 변경(선택, 기본 `google/gemma-4-26b-a4b-it:free`)
+  - 둘 중 하나라도 있으면 동작하고, 둘 다 없으면 각 API가 500으로 알려 줍니다.
+- **API 헤더:** OpenRouter 요청에는 권장 표준 헤더(`Authorization: Bearer ...`, `HTTP-Referer`, `X-Title: GymMate`)를 필수로 포함합니다. Gemini 요청은 `Authorization: Bearer <GEMINI_API_KEY>`를 씁니다.
 
 ### 📌 규칙 3. 단계별/기능별 점진적 개발 및 확인 절차
 - **한 번에 한 가지 기능만 개발:** 복수의 단계를 동시에 구현하지 않고, 원자적(atomic) 단위로 구현합니다.
@@ -58,9 +66,11 @@
 
 ```text
 gymmate/
-├── .env.local          # 로컬 개발 환경 변수 (OPENROUTER_API_KEY 등, git 제외)
+├── .env.local          # 로컬 개발 환경 변수 (GEMINI_API_KEY, OPENROUTER_API_KEY, git 제외)
 ├── .gitignore          # 형상 관리 제외 목록
 ├── AGENTS.md           # 본 개발 지침서
+├── coach.md            # 코치 설명 모델의 시스템 프롬프트 (api/coach.js가 읽음, 말투·규칙은 이 파일만 고치면 됨)
+├── vercel.json         # 배포 설정: api/coach.js 묶음에 coach.md를 포함(includeFiles)
 ├── index.html          # 홈 = 내 헬스장 (등록 기구 목록, 기구 추가, 오늘 운동 시작)
 ├── scan.html           # 기구 등록 (촬영/앨범 → 인식 → 카드 확인 → 저장)
 ├── routine.html        # 오늘의 루틴 (조건 칩 선택 → 루틴 생성·표시)
@@ -72,8 +82,11 @@ gymmate/
 │   ├── image.js        # 이미지 리사이즈(긴 변 1024px)·JPEG 0.85 base64 변환
 │   └── (페이지별 스크립트: home.js, scan.js, routine.js 등)
 ├── api/                # Vercel 서버리스 엔드포인트 (OpenRouter 호출은 여기서만)
+│   ├── _lib/
+│   │   └── ai.js       # 세 API 공통 AI 호출·모델 단계 (Gemini 직접 → OpenRouter 무료, '_' 폴더는 API 주소가 아님)
 │   ├── recognize.js    # 기구 사진 인식 API
-│   └── routine.js      # 등록 기구 기반 루틴 생성 API
+│   ├── routine.js      # 등록 기구 기반 루틴 생성 API
+│   └── coach.js        # 운동 하나의 '어떻게 + 왜' 코치 설명 API (coach.md 사용)
 ├── dev-server.js       # npm 설치 없이 정적 파일 + api/*를 띄우는 로컬 개발 서버
 └── package.json        # 실행 스크립트 정의 (npm run dev)
 ```
@@ -82,8 +95,12 @@ gymmate/
 | 키 | 내용 | 단계 |
 |---|---|---|
 | `gm_equipment` | 등록 기구 목록 `{id, name_ko, name_en, target_muscles[], role, setup[], cautions[], created_at}` | 1 |
-| `gm_profile` | 마지막 조건 `{goal, default_minutes}` (PRD의 experience는 사용자 결정으로 제외) | 2 |
-| `gm_routines` | 생성 루틴 `{id, date, conditions, principle, warmup, exercises}` | 2 |
+| `gm_profile` | 마지막 조건 `{goal, default_minutes, nickname?, body_part?}` (PRD의 experience는 사용자 결정으로 제외. nickname·body_part는 작업 6-B 선택 필드) | 2 |
+| `gm_routines` | 생성 루틴 `{id, date, conditions, principle, warmup, exercises, title?, focus_tags?, coach_note?, total_minutes?}` — conditions에 `energy`(light/normal/strong), exercises[].coach(코치 설명) 포함 | 2 |
+
+- **작업 6-B '오늘의 운동' 화면 (2026-11-19):** 밝은 크림 + 딥그린 테마(`:root` 변수, 세 페이지 공통), Pretendard CDN 글꼴.
+  - 오늘 날짜 + 같은 조건(목표·시간·부위·컨디션)의 루틴이 `gm_routines`에 있으면 다시 만들지 않고 재사용합니다.
+  - 1.md와 다른 부분(기존 기능 우선): 경력 선택 없음, 조건 시트에는 목표·시간·**부위** 칩, 루틴 상세에 기구 카드·코치 설명·다시 만들기 유지.
 | `gm_logs` | 운동 기록 | 3 |
 
 - 사진은 인식에만 쓰고 **저장하지 않습니다.**
@@ -109,6 +126,8 @@ flowchart LR
    - 경력 선택은 하지 않습니다. 대상이 모두 헬스 0~2개월 초보라 의미가 없어 뺐습니다(2026-11-19 사용자 결정, PRD와 다른 부분).
 2. **루틴 API (`api/routine.js`):** 등록 기구 목록만 사용, `{principle, total_minutes, warmup, exercises[{order, equipment_id, exercise, sets, reps, rest_sec, why_this_order}]}` 반환, 목록에 없는 기구는 서버에서 걸러냄(`filtered_count`)
 3. **결과 화면:** principle 강조 → 워밍업 → 순서별 운동 카드(누르면 기구 카드), `gm_routines`에 저장, 다시 만들기
+4. **코치 설명 (`api/coach.js` + `coach.md`):** 펼친 운동 카드의 '이 운동 자세히 배우기'를 누를 때만 생성하고, 결과는 `gm_routines`의 해당 운동 항목 `coach` 필드에 저장합니다.
+   - 동작 설명(steps, 흔한 실수)은 사용자의 자세를 평가하지 않는 '설명'이므로 PRD의 '자세 교정 제외'와 충돌하지 않는 것으로 봅니다(2026-11-19 사용자 결정).
 
 ### [Step 3] 3단계: 운동 진행·기록
 1. **세트 체크·휴식 타이머 (F3-1)** (`workout.html`)
@@ -121,8 +140,10 @@ flowchart LR
 
 1. **환경 변수 파일 생성 (`.env.local`):**
    ```env
-   OPENROUTER_API_KEY=your_openrouter_api_key_here
-   OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free
+   GEMINI_API_KEY=your_google_ai_studio_key_here      # 1단계 (https://aistudio.google.com 에서 발급)
+   OPENROUTER_API_KEY=your_openrouter_api_key_here    # 2단계 (무료 모델 대비용)
+   # GEMINI_MODEL=gemini-3-flash-preview                  (선택)
+   # OPENROUTER_MODEL=google/gemma-4-26b-a4b-it:free (선택)
    ```
 2. **로컬 서버 구동:**
    - `npm run dev` (= `node dev-server.js`): npm 설치 없이 정적 파일과 `api/*.js`를 함께 띄웁니다. Vercel CLI를 쓰려면 `npm run dev:vercel`.

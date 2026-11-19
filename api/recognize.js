@@ -2,8 +2,8 @@
  * ==============================================================================
  * 파일명: api/recognize.js
  * 역할: 기구 사진 한 장을 받아 OpenRouter 비전 모델로 기구를 알아보고, PRD 7장 스키마로 돌려주는 Vercel 서버리스 함수
- * 모델: process.env.OPENROUTER_MODEL (없으면 "google/gemma-4-26b-a4b-it:free")
- *       실패하면 FREE_VISION_FALLBACKS(이미지를 읽는 무료 모델)로 순서대로 넘어갑니다. 유료 모델은 쓰지 않습니다.
+ * 모델: 1단계 Google Gemini API 직접 호출(gemini-3-flash-preview → 3.1-flash-lite → 3.5-flash-lite, GEMINI_API_KEY),
+ *       실패하면 2단계 OpenRouter FREE_VISION_MODELS(무료). 단계 전환과 HTTP 오류 처리는 api/_lib/ai.js가 맡습니다. 유료 크레딧은 쓰지 않습니다.
  *
  * 요청:  POST /api/recognize   { "image": "data:image/jpeg;base64,..." }
  * 응답(성공): { success: true, data: {
@@ -25,23 +25,22 @@
  * ==============================================================================
  */
 
+import { buildModelStages, callAI, hasAnyAIKey, NO_KEY_MESSAGE } from "./_lib/ai.js";
+
 // 요청 이미지(base64 문자열)의 최대 길이. Vercel 서버리스 요청 본문 한도(약 4.5MB)보다 조금 작게 잡아
 // 한도에 걸리기 전에 우리 쪽에서 알기 쉬운 400 메시지를 돌려줍니다. (1024px JPEG는 보통 수백 KB라 충분)
 const MAX_IMAGE_LENGTH = 4 * 1024 * 1024;
 
-// 주 모델이 실패(429 한도 초과·과부하)했을 때 순서대로 넘어갈 무료 비전 모델 목록.
+// 2단계(무료) 비전 모델 목록. 1단계(Google Gemini 직접 호출)가 실패했을 때만 씁니다(api/_lib/ai.js 참고).
 // - 무작위 라우터 openrouter/free는 쓰지 않습니다. 이미지를 못 읽거나 정확도가 낮은 모델이 걸려
 //   예시를 베끼거나 빈 응답을 내는 문제가 확인되었기 때문입니다(2026-11-19 진단).
-// - 순서: 같은 계열 큰 모델(gemma 31b) → 느리지만(약 50초) 진단 사진을 맞힌 dots-3-note.
+// - 순서: gemma 26b → gemma 31b → 느리지만(약 50초) 진단 사진을 맞힌 dots-3-note. 최대 3개(OpenRouter 제한).
 // - 유료 모델은 크레딧 차감을 막기 위해 넣지 않습니다(사용자 결정).
-const FREE_VISION_FALLBACKS = [
+const FREE_VISION_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
   "google/gemma-4-31b-it:free",
   "dots-studio/dots-3-note-preview:free"
 ];
-
-// OpenRouter models 배열 최대 길이 (넘으면 400 "models array must have 3 items or fewer").
-// 지금은 주 모델 + 2개라 딱 맞지만, 나중에 목록을 늘려도 400이 나지 않게 잘라서 보냅니다.
-const MAX_MODELS = 3;
 
 // 응답 최대 토큰. 무료 비전 모델은 모두 '생각(reasoning)'을 먼저 하는 모델이라,
 // 생각에 토큰을 다 쓰면 정작 JSON 답이 비어 버립니다(1000일 때 finish_reason=length로 빈 응답 확인).
@@ -253,32 +252,23 @@ const USER_PROMPT = `이 사진 속 헬스장 기구를 알아보고 아래 형�
 /**
  * OpenRouter에 사진 인식을 한 번 요청합니다.
  * @param {Object} params
- * @param {string} params.apiKey - OpenRouter API 키
- * @param {string} params.modelName - 주 모델 이름
  * @param {string} params.referer - HTTP-Referer 헤더 값
  * @param {string} params.image - data:image/... base64 문자열
  * @param {string[]} [params.previousErrors] - 재시도일 때 지난 응답의 문제 목록. 프롬프트에 붙여 같은 실수를 줄입니다.
  * @returns {Promise<{ok: true, content: string} | {ok: false, status: number, error: string}>}
- * - 예외 처리: HTTP 오류는 재시도 대상이 아니므로(키 오류, 한도 초과 등은 다시 해도 같음) 상태 코드와 메시지를 그대로 돌려줍니다.
+ * - 모델 단계(Gemini 직접 → OpenRouter 무료)와 HTTP 오류 처리는 api/_lib/ai.js의 callAI가 맡습니다.
  */
-async function requestRecognition({ apiKey, modelName, referer, image, previousErrors }) {
+async function requestRecognition({ referer, image, previousErrors }) {
   let userText = USER_PROMPT;
   if (previousErrors && previousErrors.length > 0) {
     userText += `\n\n[주의] 바로 전 응답이 형식에 맞지 않았다. 다음 문제를 고쳐서 JSON만 다시 출력해:\n- ${previousErrors.join("\n- ")}`;
   }
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey.trim()}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": referer,
-      "X-Title": "GymMate"
-    },
-    body: JSON.stringify({
-      model: modelName,
-      // 주 모델이 실패하면 무료 비전 모델로 순서대로 넘어갑니다. 주 모델과 같은 이름은 한 번만 넣고, 최대 3개로 자릅니다.
-      models: [modelName].concat(FREE_VISION_FALLBACKS.filter((m) => m !== modelName)).slice(0, MAX_MODELS),
+  return callAI({
+    referer,
+    label: "기구 인식",
+    stages: buildModelStages(FREE_VISION_MODELS),
+    payload: {
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -294,30 +284,8 @@ async function requestRecognition({ apiKey, modelName, referer, image, previousE
       max_tokens: MAX_TOKENS,
       // 생각하는 양을 줄여 응답 시간과 토큰을 아낍니다. 지원하지 않는 모델은 이 값을 무시합니다.
       reasoning: { effort: "low" }
-    })
+    }
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[OpenRouter API Error]:", response.status, errorText);
-    let message = errorText;
-    try {
-      message = JSON.parse(errorText).error?.message || errorText;
-    } catch (e) {
-      // JSON이 아닌 일반 텍스트 오류면 원문을 그대로 씁니다.
-    }
-    // 429: 무료 모델 공유 한도가 찼다는 뜻입니다. 사용자가 할 수 있는 일은 잠시 뒤 다시 시도하는 것뿐이라 쉬운 말로 바꿉니다.
-    if (response.status === 429) {
-      return { ok: false, status: 429, error: "무료 AI가 지금 붐벼요. 1~2분 뒤에 다시 시도해 주세요." };
-    }
-    return { ok: false, status: response.status, error: `AI 서버 요청 실패 (${response.status}): ${message}` };
-  }
-
-  const data = await response.json();
-  const choice = data.choices?.[0];
-  // 어떤 모델이 실제로 답했는지, 토큰이 모자라 잘렸는지(length) 서버 로그에 남겨 문제를 추적하기 쉽게 합니다.
-  console.log(`[기구 인식 응답] 실제 모델: ${data.model}, finish_reason: ${choice?.finish_reason}`);
-  return { ok: true, content: choice?.message?.content || "" };
 }
 
 /**
@@ -356,13 +324,9 @@ export default async function handler(req, res) {
     }
 
     // 2) 환경 변수에서 API 키와 모델명 읽기
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    const modelName = process.env.OPENROUTER_MODEL || "google/gemma-4-26b-a4b-it:free";
-    if (!apiKey || apiKey.trim() === "" || apiKey === "your_openrouter_api_key_here") {
-      return res.status(500).json({
-        success: false,
-        error: "서버에 OPENROUTER_API_KEY 환경 변수가 설정되지 않았습니다. .env.local 파일을 확인해 주세요."
-      });
+    // AI 키(GEMINI_API_KEY 또는 OPENROUTER_API_KEY)가 하나도 없으면 부를 모델이 없으므로 바로 알려 줍니다.
+    if (!hasAnyAIKey()) {
+      return res.status(500).json({ success: false, error: NO_KEY_MESSAGE });
     }
 
     // 3) AI 호출 → JSON 파싱 → 형식 검사. 파싱/검사가 실패하면 1회만 재시도합니다(총 최대 2번 호출).
@@ -372,10 +336,8 @@ export default async function handler(req, res) {
     let previousErrors = [];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      console.log(`[기구 인식 ${attempt}/${MAX_ATTEMPTS}회차] 주 모델: ${modelName}`);
+      console.log(`[기구 인식 ${attempt}/${MAX_ATTEMPTS}회차]`);
       const result = await requestRecognition({
-        apiKey,
-        modelName,
         referer,
         image: bodyCheck.image,
         previousErrors
