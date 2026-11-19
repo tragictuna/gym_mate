@@ -776,18 +776,20 @@ function checkPastHistoryForEquipment(equipName) {
 }
 
 resetBtn.addEventListener("click", () => {
+  // 분석 결과 및 이미지 상태 초기화 (lastAnalyzedEquipmentData를 먼저 비워야
+  // switchTab 내부에서 resultSection이 다시 열리는 버그를 방지할 수 있음)
   currentBase64Image = null;
+  lastAnalyzedEquipmentData = null;
+
   imageInput.value = "";
   previewImage.src = "";
   previewContainer.style.display = "none";
   dropPrompt.style.display = "block";
-
-  resultSection.style.display = "none";
-  loadingSection.style.display = "none";
-  uploadSection.style.display = "block";
   pastHistoryBanner.style.display = "none";
-  setStep(1);
   hideError();
+
+  // 상태를 비운 뒤 탭 전환 → uploadSection이 정상 노출됨
+  setStep(1);
 });
 
 // -----------------------------------------------------------------------------
